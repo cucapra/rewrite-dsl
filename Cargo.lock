@@ -3,5 +3,5 @@
 version = 4
 
 [[package]]
-name = "beaver"
+name = "rewrite-dsl"
 version = "0.1.0"
