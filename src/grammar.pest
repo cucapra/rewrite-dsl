@@ -1,0 +1,167 @@
+// With inspiration from the Calyx grammar
+
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+COMMENT = _{ ("//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE) | "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+
+// Semicolon
+semi = _{ ";" }
+
+// Identifiers may begin with `_` or an ASCII character.
+identifier = @{ ("_" | ASCII_ALPHA)+ ~ ("_" | ASCII_ALPHA | ASCII_DIGIT)* }
+
+bitwidth = @{ ASCII_DIGIT+ }
+
+// ====== toplevel ======
+
+file = {
+      SOI
+      ~ rwrule*
+      ~ EOI
+}
+
+rule_word = @{ "rule"  ~ !(ASCII_ALPHANUMERIC | "_" | "-") }
+
+rwrule = {
+      rule_word
+      ~ identifier
+      ~ params
+      ~ "{"
+      ~ rule_body
+      ~ "}"
+}
+
+params = { "("
+      ~ (identifier ~ ("," ~ identifier)*)?
+      ~ ")"
+}
+
+rule_body = { bv_expr ~ "=>" ~ bv_expr ~ where_clause? }
+
+where_word = @{ "where"  ~ !(ASCII_ALPHANUMERIC | "_" | "-") }
+
+where_clause = { where_word ~ (assignment ~ semi)+ }
+
+assignment = { identifier ~ ":=" ~ width_expr }
+
+
+// ====== bv_expr ======
+
+bv_expr = _{ bv_primary }
+
+width_suffix = { ":" ~ width_atom }
+
+bv_primary = {
+    bv_atom ~ width_suffix?
+}
+
+bv_atom = {
+      num_lit
+    | func_call
+    | identifier
+    | concat_expr
+    | "(" ~ unary_op ~ bv_expr ~ ")"
+    | "(" ~ bv_expr ~ (bin_op ~ bv_expr | ternary_op ~ bv_expr ~ ternary_colon ~ bv_expr) ~ ")"
+}
+
+bin_op = _{ add_op | mul_op | shift_op | cmp_op | and_op | or_op | xor_op }
+
+unary_op = _{ not_op | neg_op }
+
+not_op = { "!" }
+neg_op = { "-" }
+
+add_op = { "+" | "-" }
+
+mul_op = { "*" }
+
+xor_op = { "^" }
+
+shift_op = _{ shl | shr }
+shl = { "<<" }
+shr = { ">>" }
+
+cmp_op = _{ geq | leq | gt | lt }
+geq = { ">=" }
+leq = { "<=" }
+gt  = { ">" }
+lt  = { "<" }
+
+and_op = { "&" }
+or_op  = { "|" }
+
+ternary_op    = { "?" }
+ternary_colon = _{ ":" }
+
+func_call = {
+    identifier
+~ "("
+~ (bv_expr ~ ("," ~ bv_expr)*)?
+~ ")"
+}
+
+concat_expr = {
+"{"
+~ bv_expr
+~ ("," ~ bv_expr)*
+~ "}"
+}
+
+
+// ====== literals ======
+
+binary  = @{ ASCII_BIN_DIGIT+ }
+decimal = @{ ASCII_DIGIT+ }
+octal   = @{ ASCII_OCT_DIGIT+ }
+hex     = @{ ASCII_HEX_DIGIT+ }
+
+num_lit = ${
+      "0"
+      ~ ( "d" ~ decimal
+            | "b" ~ binary
+            | "x" ~ hex
+            | "o" ~ octal )
+}
+
+
+// ====== width_expr ======
+
+width_expr = _{ width_ite }
+
+width_ite = {
+      ("(" ~ bool_expr ~ ")" ~ ternary_op ~ width_expr ~ ternary_colon ~ width_expr)
+    | width_add
+}
+
+width_add = { width_atom ~ (width_add_op ~ width_atom)* }
+
+width_atom = _{
+      identifier
+    | bitwidth
+    | "(" ~ width_expr ~ ")"
+}
+
+width_add_op = { "+" | "-" }
+
+// ====== bool_expr ======
+
+bool_expr = _{ bool_or }
+
+bool_or  = { bool_and ~ (or_op ~ bool_and)* }
+bool_and = { bool_atom ~ (and_op ~ bool_atom)* }
+
+bool_atom = _{
+      bool_not
+    | bool_const
+    | width_cmp
+    | "(" ~ bool_expr ~ ")"
+}
+
+bool_not = { not_op ~ bool_atom }
+
+bool_const = _{ bool_true | bool_false }
+bool_true  = @{ "true"  ~ !(ASCII_ALPHANUMERIC | "_" | "-") }
+bool_false = @{ "false" ~ !(ASCII_ALPHANUMERIC | "_" | "-") }
+
+width_cmp    = { width_expr ~ width_cmp_op ~ width_expr }
+width_cmp_op = _{ geq | leq | eq | gt | lt }
+eq = { "==" }

@@ -1,0 +1,5 @@
+rule AddLZero(i) {
+    (0x0:i + a:i):i
+    =>
+    a:i
+}

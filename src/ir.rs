@@ -71,37 +71,31 @@ pub enum BitVecCmpOp {
     Eq,
 }
 
-// Extension logics.
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub enum Ext {
-    // Zero-extension: extend by prepending zeros.
-    ZeroExt,
-    // Sign-extension: extend by replicating the most significant bit.
-    SignExt,
-}
-
 /// Expression computing a bit-vector value.
 ///
-/// Most variants carry a [`WidthExprId`] giving the result width, as well
-/// as an [`Ext`] representing how they should be extended if needed.
+/// Most variants carry a [`WidthExprId`] giving the result width.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum BitVecExpr {
     /// Symbolic bit-vector variable.
-    Var(WidthExprId, String, Ext),
+    Var(WidthExprId, String),
     /// Constant bit-vector.
-    Const(WidthExprId, u64, Ext),
+    Const(WidthExprId, u64),
     /// Arithmetic op applied to two operands.
-    Arith(WidthExprId, BitVecArithOp, BitVecExprId, BitVecExprId, Ext),
+    Arith(WidthExprId, BitVecArithOp, BitVecExprId, BitVecExprId),
     /// Comparison of two operands.
     ///
     /// Outputs a 1-bit bit-vector: `#b1` is true, `#b0` is false.
-    Cmp(BitVecCmpOp, BitVecExprId, BitVecExprId, Ext),
+    Cmp(BitVecCmpOp, BitVecExprId, BitVecExprId),
     /// Concatenation of two bit-vectors.
-    Cat(WidthExprId, BitVecExprId, BitVecExprId, Ext),
+    Cat(WidthExprId, BitVecExprId, BitVecExprId),
     /// Conditional bit-vector: `cond ? then : else`.
     ///
     /// `cond` is expected to be a 1-bit bit-vector: `#b1` is true, `#b0` is false.
-    Ite(WidthExprId, BitVecExprId, BitVecExprId, BitVecExprId, Ext),
+    Ite(WidthExprId, BitVecExprId, BitVecExprId, BitVecExprId),
+    /// Sign extension.
+    SExt(WidthExprId, BitVecExprId),
+    /// Zero extension.
+    ZExt(WidthExprId, BitVecExprId),
 }
 
 /// Expression arena.
@@ -126,8 +120,8 @@ impl Default for Ctx {
         let mut width_exprs: PrimaryMap<WidthExprId, WidthExpr> = Default::default();
         let width_one = width_exprs.push(WidthExpr::Const(NonZeroU32::new(1).unwrap()));
         let mut bv_exprs: PrimaryMap<BitVecExprId, BitVecExpr> = Default::default();
-        let bv_false = bv_exprs.push(BitVecExpr::Const(width_one, 0, Ext::ZeroExt));
-        let bv_true = bv_exprs.push(BitVecExpr::Const(width_one, 1, Ext::SignExt)); // Arbitrary choice
+        let bv_false = bv_exprs.push(BitVecExpr::Const(width_one, 0));
+        let bv_true = bv_exprs.push(BitVecExpr::Const(width_one, 1)); // Arbitrary choice
         Self {
             width_exprs,
             bool_exprs: Default::default(),
@@ -210,12 +204,14 @@ impl Ctx {
     pub fn width(&self, expr: BitVecExprId) -> WidthExprId {
         match &self[expr] {
             // extract the width parameter:
-            BitVecExpr::Var(w, _, _)
-            | BitVecExpr::Const(w, _, _)
-            | BitVecExpr::Arith(w, _, _, _, _)
-            | BitVecExpr::Cat(w, _, _, _)
-            | BitVecExpr::Ite(w, _, _, _, _) => *w,
-            BitVecExpr::Cmp(_, _, _, _) => self.width_one,
+            BitVecExpr::Var(w, _)
+            | BitVecExpr::Const(w, _)
+            | BitVecExpr::Arith(w, _, _, _)
+            | BitVecExpr::Cat(w, _, _)
+            | BitVecExpr::Ite(w, _, _, _)
+            | BitVecExpr::SExt(w, _)
+            | BitVecExpr::ZExt(w, _) => *w,
+            BitVecExpr::Cmp(_, _, _) => self.width_one,
         }
     }
 
@@ -250,6 +246,8 @@ impl Ctx {
 }
 
 /// A rewrite rule: `lhs -> rhs`, subject to width constraints.
+/// 
+#[derive(Debug, Default)]
 pub struct RwRule {
     /// Rule name.
     pub name: String,
@@ -260,3 +258,5 @@ pub struct RwRule {
     /// Right-hand side (replacement).
     pub rhs: BitVecExprId,
 }
+
+pub type RwProg = Vec<RwRule>;
