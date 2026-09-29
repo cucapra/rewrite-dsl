@@ -35,7 +35,10 @@ params = { "("
       ~ ")"
 }
 
-rule_body = { bv_expr ~ "=>" ~ bv_expr ~ where_clause? }
+rule_body = { lhs ~ "=>" ~ rhs ~ where_clause? }
+
+lhs = _{ bv_expr }
+rhs = _{ bv_expr }
 
 where_word = @{ "where"  ~ !(ASCII_ALPHANUMERIC | "_" | "-") }
 
