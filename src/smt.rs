@@ -3,7 +3,7 @@ use std::{collections::HashMap, io::Result};
 use easy_smt::{ContextBuilder, Response, SExpr};
 
 use crate::ir::{
-    BitVecArithOp, BitVecCmpOp, BitVecExpr, BitVecExprId, Ctx, RwRule, WidthAssignment,
+    BitVecBinArithOp, BitVecCmpOp, BitVecExpr, BitVecExprId, BitVecUnArithOp, Ctx, RwRule, WidthAssignment,
 };
 
 // Extension logics.
@@ -50,9 +50,8 @@ impl Ctx {
                 let bv = smt.bit_vec_sort(smt.numeral(self.eval_width(*w, assgn)));
                 smt.declare_const(name, bv)?
             }
-            BitVecExpr::Const(w, v) => 
-                smt.binary(self.eval_width(*w, assgn) as usize, *v as i64),
-            BitVecExpr::Arith(w, op, a, b) => {
+            BitVecExpr::Const(w, v) => smt.binary(self.eval_width(*w, assgn) as usize, *v as i64),
+            BitVecExpr::BinArith(w, op, a, b) => {
                 let out_w = self.eval_width(*w, assgn);
                 let wa = self.eval_width(self.width(*a), assgn);
                 let wb = self.eval_width(self.width(*b), assgn);
@@ -64,11 +63,11 @@ impl Ctx {
                 let sb = self.to_smt(smt, *b, assgn, cache)?;
                 // let sa = smt_extend(smt, sa, out_w - wa);
                 // let sb = smt_extend(smt, sb, out_w - wb);
-                    match op {
-                        BitVecArithOp::And => smt.bvand(sa, sb),
-                        BitVecArithOp::Add => smt.bvadd(sa, sb),
-                        BitVecArithOp::Or => smt.bvor(sa, sb),
-                    }
+                match op {
+                    BitVecBinArithOp::And => smt.bvand(sa, sb),
+                    BitVecBinArithOp::Add => smt.bvadd(sa, sb),
+                    BitVecBinArithOp::Or => smt.bvor(sa, sb),
+                }
             }
             BitVecExpr::Cmp(op, a, b) => {
                 let sa = self.to_smt(smt, *a, assgn, cache)?;
@@ -98,6 +97,23 @@ impl Ctx {
                 let sa = self.to_smt(smt, *a, assgn, cache)?;
                 smt_extend(smt, sa, self.eval_width(*w, assgn), Ext::ZeroExt)
             }
+            BitVecExpr::UnArith(
+                w,
+                op,
+                a,
+            ) => {
+                let out_w = self.eval_width(*w, assgn);
+                let wa = self.eval_width(self.width(*a), assgn);
+                assert!(
+                    wa <= out_w,
+                    "operand wider than output; truncation unsupported"
+                );
+                let sa = self.to_smt(smt, *a, assgn, cache)?;
+                match op {
+                    BitVecUnArithOp::Neg => smt.bvneg(sa),
+                    BitVecUnArithOp::Not => smt.bvnot(sa),
+                }
+            }
         };
         cache.insert(expr, s);
         Ok(s)
@@ -105,11 +121,7 @@ impl Ctx {
 
     /// Checks whether `rule.lhs` and `rule.rhs` are equivalent at a
     /// concrete width assignment, using Z3.
-    pub fn check_rule(
-        &self,
-        rule: &RwRule,
-        assign: &WidthAssignment,
-    ) -> Result<Response> {
+    pub fn check_rule(&self, rule: &RwRule, assign: &WidthAssignment) -> Result<Response> {
         let mut smt = ContextBuilder::new().with_z3_defaults().build()?;
         let mut cache = HashMap::new();
         let lhs = self.to_smt(&mut smt, rule.lhs, assign, &mut cache)?;

@@ -37,8 +37,8 @@ params = { "("
 
 rule_body = { lhs ~ "=>" ~ rhs ~ where_clause? }
 
-lhs = _{ bv_expr }
-rhs = _{ bv_expr }
+lhs = { bv_expr }
+rhs = { bv_expr }
 
 where_word = @{ "where"  ~ !(ASCII_ALPHANUMERIC | "_" | "-") }
 
@@ -62,13 +62,22 @@ bv_atom = {
     | func_call
     | identifier
     | concat_expr
-    | "(" ~ unary_op ~ bv_expr ~ ")"
-    | "(" ~ bv_expr ~ (bin_op ~ bv_expr | ternary_op ~ bv_expr ~ ternary_colon ~ bv_expr) ~ ")"
+    | "(" ~ unary_expr ~ ")"
+    | "(" ~ ary_expr ~ ")"
 }
+
+unary_expr = { unary_op ~ bv_expr }
+ary_expr = { bv_expr ~ ary_tail }
+ary_tail = { binary_tail | ternary_tail }
+binary_tail = { bin_op ~ bv_expr }
+ternary_tail = { ternary_op ~ t_expr ~ ternary_colon ~ f_expr }
+
+t_expr = { bv_expr }
+f_expr = { bv_expr }
 
 bin_op = _{ add_op | mul_op | shift_op | cmp_op | and_op | or_op | xor_op }
 
-unary_op = _{ not_op | neg_op }
+unary_op = { not_op | neg_op }
 
 not_op = { "!" }
 neg_op = { "-" }
@@ -96,18 +105,22 @@ ternary_op    = { "?" }
 ternary_colon = _{ ":" }
 
 func_call = {
-    identifier
-~ "("
-~ (bv_expr ~ ("," ~ bv_expr)*)?
-~ ")"
+      identifier
+      ~ "("
+      ~ (bv_expr ~ ("," ~ bv_expr)*)?
+      ~ ")"
 }
 
 concat_expr = {
-"{"
-~ bv_expr
-~ ("," ~ bv_expr)*
-~ "}"
+      "{"
+      ~ l_expr
+      ~ ","
+      ~ r_expr
+      ~ "}"
 }
+
+l_expr = { bv_expr }
+r_expr = { bv_expr }
 
 
 // ====== literals ======

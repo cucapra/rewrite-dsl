@@ -51,15 +51,24 @@ pub enum BoolExpr {
     Eq(WidthExprId, WidthExprId),
 }
 
-/// Arithmetic operators for [`BitVecExpr::Arith`].
+/// Binary arithmetic operators for [`BitVecExpr::BinArith`].
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
-pub enum BitVecArithOp {
+pub enum BitVecBinArithOp {
     /// Bitwise AND.
     And,
     /// Addition.
     Add,
     /// Bitwise OR.
     Or,
+}
+
+/// Unary arithmetic operators for [`BitVecExpr::UnArith`].
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+pub enum BitVecUnArithOp {
+    /// Bitwise NOT.
+    Not,
+    /// Signed negation.
+    Neg,
 }
 
 /// Comparison operators for [`BitVecExpr::Cmp`].
@@ -80,8 +89,10 @@ pub enum BitVecExpr {
     Var(WidthExprId, String),
     /// Constant bit-vector.
     Const(WidthExprId, u64),
+    /// Arithmetic op applied to one operand.
+    UnArith(WidthExprId, BitVecUnArithOp, BitVecExprId),
     /// Arithmetic op applied to two operands.
-    Arith(WidthExprId, BitVecArithOp, BitVecExprId, BitVecExprId),
+    BinArith(WidthExprId, BitVecBinArithOp, BitVecExprId, BitVecExprId),
     /// Comparison of two operands.
     ///
     /// Outputs a 1-bit bit-vector: `#b1` is true, `#b0` is false.
@@ -206,7 +217,8 @@ impl Ctx {
             // extract the width parameter:
             BitVecExpr::Var(w, _)
             | BitVecExpr::Const(w, _)
-            | BitVecExpr::Arith(w, _, _, _)
+            | BitVecExpr::BinArith(w, _, _, _)
+            | BitVecExpr::UnArith(w, _, _)
             | BitVecExpr::Cat(w, _, _)
             | BitVecExpr::Ite(w, _, _, _)
             | BitVecExpr::SExt(w, _)

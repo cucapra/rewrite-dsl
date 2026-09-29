@@ -16,32 +16,32 @@ fn build_assoc_add_diff_widths(ctx: &mut Ctx) -> RwRule {
     let c = ctx.insert_bv(BitVecExpr::Var(wc, "c".to_string(), Ext::ZeroExt));
 
     // lhs: a + (b + c)
-    let bc = ctx.insert_bv(BitVecExpr::Arith(
+    let bc = ctx.insert_bv(BitVecExpr::BinArith(
         w_bc,
-        BitVecArithOp::Add,
+        BitVecBinArithOp::Add,
         b,
         c,
         Ext::ZeroExt,
     ));
-    let lhs = ctx.insert_bv(BitVecExpr::Arith(
+    let lhs = ctx.insert_bv(BitVecExpr::BinArith(
         w_out,
-        BitVecArithOp::Add,
+        BitVecBinArithOp::Add,
         a,
         bc,
         Ext::ZeroExt,
     ));
 
     // rhs: (a + b) + c
-    let ab = ctx.insert_bv(BitVecExpr::Arith(
+    let ab = ctx.insert_bv(BitVecExpr::BinArith(
         w_ab,
-        BitVecArithOp::Add,
+        BitVecBinArithOp::Add,
         a,
         b,
         Ext::ZeroExt,
     ));
-    let rhs = ctx.insert_bv(BitVecExpr::Arith(
+    let rhs = ctx.insert_bv(BitVecExpr::BinArith(
         w_out,
-        BitVecArithOp::Add,
+        BitVecBinArithOp::Add,
         ab,
         c,
         Ext::ZeroExt,
