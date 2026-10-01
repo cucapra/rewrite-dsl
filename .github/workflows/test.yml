@@ -8,6 +8,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  Z3_VERSION: 4.16.0
+  GLIBC_VERSION: 2.39
 
 jobs:
   tests:
@@ -21,9 +23,14 @@ jobs:
           - nightly
 
     steps:
+    - uses: actions/checkout@v7
+    - name: Set Up Z3
+      uses: ./.github/workflows/setup-z3
+      with:
+        version: ${{ env.Z3_VERSION }}
+        glibc_version: ${{ env.GLIBC_VERSION }}
     - name: Update Rust to ${{ matrix.toolchain }}
       run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
-    - uses: actions/checkout@v7
     - name: Build
       run: cargo build --verbose
     - name: Run tests (Debug)
