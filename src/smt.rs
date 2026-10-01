@@ -44,7 +44,7 @@ impl Ctx {
         cache: &mut HashMap<BitVecExprId, SExpr>,
     ) -> std::io::Result<SExpr> {
         if let Some(s) = cache.get(&expr) {
-            return Ok(s.clone());
+            return Ok(*s);
         }
         let s = match &self[expr] {
             BitVecExpr::Var(w, name) => {
@@ -124,7 +124,7 @@ impl Ctx {
         let lhs = self.to_smt(&mut smt, rule.lhs, assign, &mut cache)?;
         let rhs = self.to_smt(&mut smt, rule.rhs, assign, &mut cache)?;
         smt.assert(smt.not(smt.eq(lhs, rhs)))?;
-        let rslt = smt.check();
-        rslt
+        
+        smt.check()
     }
 }
