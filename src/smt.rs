@@ -124,7 +124,7 @@ impl Ctx {
         let lhs = self.to_smt(&mut smt, rule.lhs, assign, &mut cache)?;
         let rhs = self.to_smt(&mut smt, rule.rhs, assign, &mut cache)?;
         smt.assert(smt.not(smt.eq(lhs, rhs)))?;
-        
+
         smt.check()
     }
 }
