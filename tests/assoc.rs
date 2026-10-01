@@ -1,6 +1,6 @@
-use std::borrow::Cow;
-use rewrite_dsl::ir::*;
 use easy_smt::*;
+use rewrite_dsl::ir::*;
+use std::borrow::Cow;
 
 /// Builds associativity-of-addition rule.
 fn build_assoc_add_diff_widths(ctx: &mut Ctx) -> RwRule {
