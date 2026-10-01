@@ -4,20 +4,44 @@
 //! This module provides an way to import bwlang rewrites from
 //! https://github.com/luigirinaldi/parametric-bitvector-benchmarks
 
+use crate::ir::RwProg;
 use std::path::Path;
 use tinyjson;
 use tinyjson::JsonValue;
 
-pub fn parse_file(filename: impl AsRef<Path>) {
-    let string = std::fs::read_to_string(filename).unwrap();
-    parse(&string)
+fn convert(bw: Rule) -> RwProg {
+    todo!()
 }
 
-pub fn parse(string: &str) {
+#[derive(Debug)]
+struct Vars {
+    width_vars: Vec<String>,
+}
+
+fn parse_to_bw(string: &str) -> Rule {
     let info = parse_json(string);
+    let name = info.name;
     let lhs = parse_expr(&generic_s_expr(&info.lhs));
     let rhs = parse_expr(&generic_s_expr(&info.rhs));
-    let preconditions: Vec<_> = info.preconditions.iter().map(|s| parse_bool_expr(&generic_s_expr(s))).collect();
+    let preconditions: Vec<_> = info
+        .preconditions
+        .iter()
+        .map(|s| parse_bool_expr(&generic_s_expr(s)))
+        .collect();
+    Rule {
+        name,
+        preconditions,
+        lhs,
+        rhs,
+    }
+}
+
+#[derive(Debug, Clone)]
+struct Rule {
+    name: String,
+    preconditions: Vec<BoolExpr>,
+    lhs: Expr,
+    rhs: Expr,
 }
 
 fn parse_width_expr(expr: &SExpr) -> WidthExpr {
@@ -29,33 +53,33 @@ fn parse_width_expr(expr: &SExpr) -> WidthExpr {
 }
 
 fn parse_bool_expr(expr: &SExpr) -> BoolExpr {
+    use SExpr::*;
     match expr {
-        other => todo!("{other:?} -> WidthExpr"),
+        List(items) => match items.as_slice() {
+            [Leaf("<"), a, b] => {
+                BoolExpr::Less(parse_width_expr(a).into(), parse_width_expr(b).into())
+            }
+            other => todo!("{other:?}"),
+        },
+        Leaf(name) => todo!("{name:?} -> BoolExpr"),
     }
 }
 
 fn parse_expr(expr: &SExpr) -> Expr {
     use SExpr::*;
     match expr {
-        List(items) => {
-            match items.as_slice() {
-                [Leaf("bw"), width, other] => {
-                    let width = parse_width_expr(width);
-                    let other = parse_expr(other);
-                    todo!("{width:?} {other:?}")
-                }
-                [Leaf("+"), a, b] => {
-                    todo!("plus")
-                }
-                other => todo!("{other:?}"),
+        List(items) => match items.as_slice() {
+            [Leaf("bw"), width, other] => {
+                let mut underlying = parse_expr(other);
+                underlying.set_width(parse_width_expr(width));
+                underlying
             }
-            todo!()
+            [Leaf("+"), a, b] => Expr::Add(None, parse_expr(a).into(), parse_expr(b).into()),
+            other => todo!("{other:?}"),
         },
-        Leaf(name) => todo!("name -> WidthExpr"),
+        Leaf(name) => Expr::Var(None, name.to_string()),
     }
 }
-
-
 
 fn generic_s_expr(expr: &str) -> SExpr<'_> {
     use SExpr::*;
@@ -68,16 +92,18 @@ fn generic_s_expr(expr: &str) -> SExpr<'_> {
                 assert!(open_count > 0, "too many closing parens!");
                 open_count -= 1;
                 let mut list = vec![];
-                while let Some(e) = stack.pop() && !matches!(e, Leaf("(")) {
+                while let Some(e) = stack.pop()
+                    && !matches!(e, Leaf("("))
+                {
                     list.push(e);
                 }
                 list.reverse();
                 stack.push(List(list));
-            },
+            }
             "(" => {
                 open_count += 1;
                 stack.push(Leaf(token));
-            },
+            }
             _ => {
                 stack.push(Leaf(token));
             }
@@ -102,7 +128,7 @@ fn tokenize(expr: &str) -> Vec<&str> {
             token_start = Some(idx);
         }
         if is_paran {
-            tokens.push(&expr[idx..idx+1]);
+            tokens.push(&expr[idx..idx + 1]);
         }
     }
     tokens
@@ -155,9 +181,6 @@ struct JsonInfo {
     preconditions: Vec<String>,
 }
 
-
-
-
 #[derive(Debug, Clone)]
 enum WidthExpr {
     Var(String),
@@ -170,7 +193,29 @@ enum BoolExpr {
 
 #[derive(Debug, Clone)]
 enum Expr {
-    Add(WidthExpr, Box<Expr>, Box<Expr>),
+    Add(Option<WidthExpr>, Box<Expr>, Box<Expr>),
+    Var(Option<WidthExpr>, String),
+}
+
+impl Expr {
+    fn width(&self) -> &WidthExpr {
+        self.width_option().unwrap()
+    }
+
+    fn width_option(&self) -> Option<&WidthExpr> {
+        match self {
+            Expr::Add(w, _, _) => w.as_ref(),
+            Expr::Var(w, _) => w.as_ref(),
+        }
+    }
+
+    fn set_width(&mut self, width: WidthExpr) {
+        let w = match self {
+            Expr::Add(w, _, _) => w,
+            Expr::Var(w, _) => w,
+        };
+        *w = Some(width);
+    }
 }
 
 #[cfg(test)]
@@ -193,19 +238,35 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        parse(ADD_ASSOC_4);
+        parse_to_bw(ADD_ASSOC_4);
     }
 
     #[test]
     fn test_tokenize() {
-        assert_eq!(tokenize("(bw u (+   (bw   p a) (bw      r b)))"), vec!["(", "bw", "u", "(", "+", "(", "bw", "p", "a", ")", "(", "bw", "r", "b", ")", ")", ")"]);
+        assert_eq!(
+            tokenize("(bw u (+   (bw   p a) (bw      r b)))"),
+            vec![
+                "(", "bw", "u", "(", "+", "(", "bw", "p", "a", ")", "(", "bw", "r", "b", ")", ")",
+                ")"
+            ]
+        );
     }
 
     #[test]
     fn test_generic_s_expr() {
         use SExpr::*;
-        let expected = List(vec![Leaf("bw"), Leaf("u"), List(vec![Leaf("+"), List(vec![Leaf("bw"), Leaf("p"), Leaf("a")]), List(vec![Leaf("bw"), Leaf("r"), Leaf("b")])])]);
-        assert_eq!(generic_s_expr("(bw u (+   (bw   p a) (bw      r b)))"), expected);
+        let expected = List(vec![
+            Leaf("bw"),
+            Leaf("u"),
+            List(vec![
+                Leaf("+"),
+                List(vec![Leaf("bw"), Leaf("p"), Leaf("a")]),
+                List(vec![Leaf("bw"), Leaf("r"), Leaf("b")]),
+            ]),
+        ]);
+        assert_eq!(
+            generic_s_expr("(bw u (+   (bw   p a) (bw      r b)))"),
+            expected
+        );
     }
-
 }
