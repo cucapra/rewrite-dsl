@@ -60,7 +60,7 @@ fn emit_rule(rrule: Pair<'_, Rule>, ctx: &mut Ctx) -> RwRule {
     rule
 }
 
-fn emit_params(rparams: Pair<'_, Rule>, ctx: &mut Ctx) -> Vec<String> {
+fn emit_params(rparams: Pair<'_, Rule>, _ctx: &mut Ctx) -> Vec<String> {
     rparams
         .into_inner()
         .map(|x| x.as_str().to_string())
@@ -84,7 +84,7 @@ fn emit_bvexpr(rbvexpr: Pair<'_, Rule>, ctx: &mut Ctx) -> BitVecExprId {
     emit_bvatom(atom, ctx, width)
 }
 
-fn emit_wexpr(rwexpr: Pair<'_, Rule>, ctx: &mut Ctx) -> WidthExprId {
+fn emit_wexpr(_rwexpr: Pair<'_, Rule>, _ctx: &mut Ctx) -> WidthExprId {
     Default::default()
 }
 
@@ -105,7 +105,7 @@ fn emit_bvatom(rbvatom: Pair<'_, Rule>, ctx: &mut Ctx, w: WidthExprId) -> BitVec
     }
 }
 
-fn emit_bvcall(rbvcall: Pair<'_, Rule>, ctx: &mut Ctx, w: WidthExprId) -> BitVecExprId {
+fn emit_bvcall(_rbvcall: Pair<'_, Rule>, _ctx: &mut Ctx, _w: WidthExprId) -> BitVecExprId {
     unimplemented!()
 }
 
@@ -136,6 +136,6 @@ fn emit_bvunop(rbvunop: Pair<'_, Rule>, ctx: &mut Ctx, w: WidthExprId) -> BitVec
     ctx.insert_bv(expr)
 }
 
-fn emit_bvary(rbvary: Pair<'_, Rule>, ctx: &mut Ctx, w: WidthExprId) -> BitVecExprId {
+fn emit_bvary(_rbvary: Pair<'_, Rule>, _ctx: &mut Ctx, _w: WidthExprId) -> BitVecExprId {
     unimplemented!()
 }

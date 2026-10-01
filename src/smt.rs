@@ -3,7 +3,8 @@ use std::{collections::HashMap, io::Result};
 use easy_smt::{ContextBuilder, Response, SExpr};
 
 use crate::ir::{
-    BitVecBinArithOp, BitVecCmpOp, BitVecExpr, BitVecExprId, BitVecUnArithOp, Ctx, RwRule, WidthAssignment,
+    BitVecBinArithOp, BitVecCmpOp, BitVecExpr, BitVecExprId, BitVecUnArithOp, Ctx, RwRule,
+    WidthAssignment,
 };
 
 // Extension logics.
@@ -43,7 +44,7 @@ impl Ctx {
         cache: &mut HashMap<BitVecExprId, SExpr>,
     ) -> std::io::Result<SExpr> {
         if let Some(s) = cache.get(&expr) {
-            return Ok(s.clone());
+            return Ok(*s);
         }
         let s = match &self[expr] {
             BitVecExpr::Var(w, name) => {
@@ -97,11 +98,7 @@ impl Ctx {
                 let sa = self.to_smt(smt, *a, assgn, cache)?;
                 smt_extend(smt, sa, self.eval_width(*w, assgn), Ext::ZeroExt)
             }
-            BitVecExpr::UnArith(
-                w,
-                op,
-                a,
-            ) => {
+            BitVecExpr::UnArith(w, op, a) => {
                 let out_w = self.eval_width(*w, assgn);
                 let wa = self.eval_width(self.width(*a), assgn);
                 assert!(
@@ -127,7 +124,7 @@ impl Ctx {
         let lhs = self.to_smt(&mut smt, rule.lhs, assign, &mut cache)?;
         let rhs = self.to_smt(&mut smt, rule.rhs, assign, &mut cache)?;
         smt.assert(smt.not(smt.eq(lhs, rhs)))?;
-        let rslt = smt.check();
-        rslt
+
+        smt.check()
     }
 }

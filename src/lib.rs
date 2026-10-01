@@ -1,3 +1,3 @@
-pub mod smt;
 pub mod ir;
 pub mod parser;
+pub mod smt;
