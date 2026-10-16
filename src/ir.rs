@@ -258,7 +258,7 @@ impl Ctx {
 }
 
 /// A rewrite rule: `lhs -> rhs`, subject to width constraints.
-/// 
+///
 #[derive(Debug, Default)]
 pub struct RwRule {
     /// Rule name.
