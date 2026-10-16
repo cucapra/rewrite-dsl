@@ -3,7 +3,9 @@ use std::{fs, unimplemented};
 use pest::{Parser, iterators::Pair};
 use pest_derive::Parser;
 
-use crate::ir::{BitVecExpr, BitVecExprId, BitVecUnArithOp, Ctx, RwProg, RwRule, WidthExprId};
+use crate::ir::{
+    BitVecBinArithOp, BitVecExpr, BitVecExprId, BitVecUnArithOp, Ctx, RwProg, RwRule, WidthExprId,
+};
 
 #[derive(Parser)]
 #[grammar = "grammar.pest"]
@@ -113,7 +115,7 @@ fn emit_bvcat(rbvcat: Pair<'_, Rule>, ctx: &mut Ctx, w: WidthExprId) -> BitVecEx
     let mut inner = rbvcat.into_inner();
     let lexpr = inner.next().unwrap();
     let rexpr = inner.next().unwrap();
-    let expr = BitVecExpr::Cat(w, emit_bvatom(lexpr, ctx, w), emit_bvatom(rexpr, ctx, w));
+    let expr = BitVecExpr::Cat(w, emit_bvexpr(lexpr, ctx), emit_bvexpr(rexpr, ctx));
     ctx.insert_bv(expr)
 }
 
@@ -131,11 +133,49 @@ fn emit_bvunop(rbvunop: Pair<'_, Rule>, ctx: &mut Ctx, w: WidthExprId) -> BitVec
                 unreachable!()
             }
         },
-        emit_bvatom(rexpr, ctx, w),
+        emit_bvexpr(rexpr, ctx),
     );
     ctx.insert_bv(expr)
 }
 
-fn emit_bvary(_rbvary: Pair<'_, Rule>, _ctx: &mut Ctx, _w: WidthExprId) -> BitVecExprId {
-    unimplemented!()
+fn emit_bvary(rbvary: Pair<'_, Rule>, ctx: &mut Ctx, w: WidthExprId) -> BitVecExprId {
+    let mut inner = rbvary.into_inner();
+    let lexpr = inner.next().unwrap();
+    let tail = inner.next().unwrap().into_inner().next().unwrap();
+    let expr = match tail.as_rule() {
+        Rule::binary_tail => {
+            let mut inner = tail.into_inner();
+            let binop = inner.next().unwrap();
+            let rexpr = inner.next().unwrap();
+            BitVecExpr::BinArith(
+                w,
+                emit_bvbinop(binop),
+                emit_bvexpr(lexpr, ctx),
+                emit_bvexpr(rexpr, ctx),
+            )
+        }
+        Rule::ternary_tail => {
+            let mut inner = tail.into_inner();
+            let mexpr = inner.next().unwrap();
+            let rexpr = inner.next().unwrap();
+            BitVecExpr::Ite(
+                w,
+                emit_bvexpr(lexpr, ctx),
+                emit_bvexpr(mexpr, ctx),
+                emit_bvexpr(rexpr, ctx),
+            )
+        }
+        unr => {
+            println!("Reached unreachable {:#?}", unr);
+            unreachable!()
+        }
+    };
+    ctx.insert_bv(expr)
+}
+
+fn emit_bvbinop(rbvbinop: Pair<'_, Rule>) -> BitVecBinArithOp {
+    match rbvbinop.as_rule() {
+        Rule::add_op => BitVecBinArithOp::Add,
+        _ => unimplemented!(),
+    }
 }
