@@ -26,12 +26,17 @@ pub enum WidthExpr {
     Var(String),
     /// Concrete width.
     Const(Width),
-    /// Sum of two widths.
-    Add(WidthExprId, WidthExprId),
-    /// Difference of two widths.
-    Sub(WidthExprId, WidthExprId),
+    /// Binary operation of two widths.
+    BinOp(WidthBinOp, WidthExprId, WidthExprId),
     /// Conditional width: `cond ? then : else`.
     Ite(BoolExprId, WidthExprId, WidthExprId),
+}
+
+/// Binary operators for [`WidthExpr::BinOp`].
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub enum WidthBinOp {
+    Add,
+    Sub,
 }
 
 /// Boolean width expression.
@@ -232,8 +237,14 @@ impl Ctx {
         match &self[expr] {
             WidthExpr::Var(s) => assgn[s],
             WidthExpr::Const(w) => (*w).into(),
-            WidthExpr::Add(we1, we2) => self.eval_width(*we1, assgn) + self.eval_width(*we2, assgn),
-            WidthExpr::Sub(we1, we2) => self.eval_width(*we1, assgn) - self.eval_width(*we2, assgn),
+            WidthExpr::BinOp(op, we1, we2) => {
+                let l = self.eval_width(*we1, assgn);
+                let r = self.eval_width(*we2, assgn);
+                match op {
+                    WidthBinOp::Add => l + r,
+                    WidthBinOp::Sub => l - r,
+                }
+            }
             WidthExpr::Ite(be, we1, we2) => {
                 if self.eval_bool(*be, assgn) {
                     self.eval_width(*we1, assgn)

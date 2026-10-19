@@ -134,11 +134,13 @@ num_lit = ${
 width_expr = _{ width_ite }
 
 width_ite = {
-      ("(" ~ bool_expr ~ ")" ~ "?" ~ width_expr ~ ":" ~ width_expr)
+      width_ite_atom
     | width_add
 }
 
-width_add = { width_atom ~ (width_add_op ~ width_atom)* }
+width_ite_atom = { ("(" ~ bool_expr ~ ")" ~ "?" ~ width_expr ~ ":" ~ width_expr) }
+
+width_binop = { width_atom ~ (width_add_op ~ width_atom)* }
 
 width_atom = _{
       identifier
@@ -146,7 +148,10 @@ width_atom = _{
     | "(" ~ width_expr ~ ")"
 }
 
-width_add_op = { "+" | "-" }
+width_add_op = _{ width_add | width_sub }
+
+width_add = { "+" }
+width_sub = { "-" }
 
 // ====== bool_expr ======
 
