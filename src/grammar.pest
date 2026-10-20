@@ -37,8 +37,8 @@ params = { "("
 
 rule_body = { lhs ~ "=>" ~ rhs ~ where_clause? }
 
-lhs = { bv_expr }
-rhs = { bv_expr }
+lhs = _{ bv_expr }
+rhs = _{ bv_expr }
 
 where_word = @{ "where"  ~ !(ASCII_ALPHANUMERIC | "_" | "-") }
 
@@ -49,13 +49,9 @@ assignment = { identifier ~ ":=" ~ width_expr }
 
 // ====== bv_expr ======
 
-bv_expr = _{ bv_primary }
+bv_expr = { bv_atom ~ width_suffix? }
 
 width_suffix = { ":" ~ width_atom }
-
-bv_primary = {
-    bv_atom ~ width_suffix?
-}
 
 bv_atom = {
       num_lit
@@ -70,10 +66,7 @@ unary_expr = { unary_op ~ bv_expr }
 ary_expr = { bv_expr ~ ary_tail }
 ary_tail = { binary_tail | ternary_tail }
 binary_tail = { bin_op ~ bv_expr }
-ternary_tail = { ternary_op ~ t_expr ~ ternary_colon ~ f_expr }
-
-t_expr = { bv_expr }
-f_expr = { bv_expr }
+ternary_tail = { "?" ~ bv_expr ~ ":" ~ bv_expr }
 
 bin_op = _{ add_op | mul_op | shift_op | cmp_op | and_op | or_op | xor_op }
 
@@ -100,9 +93,6 @@ lt  = { "<" }
 
 and_op = { "&" }
 or_op  = { "|" }
-
-ternary_op    = { "?" }
-ternary_colon = _{ ":" }
 
 func_call = {
       identifier
@@ -144,19 +134,24 @@ num_lit = ${
 width_expr = _{ width_ite }
 
 width_ite = {
-      ("(" ~ bool_expr ~ ")" ~ ternary_op ~ width_expr ~ ternary_colon ~ width_expr)
-    | width_add
+      width_ite_atom
+    | width_binop
 }
 
-width_add = { width_atom ~ (width_add_op ~ width_atom)* }
+width_ite_atom = { ("(" ~ bool_expr ~ ")" ~ "?" ~ width_expr ~ ":" ~ width_expr) }
 
-width_atom = _{
+width_binop = { width_atom ~ (width_add_op ~ width_atom)* }
+
+width_atom = {
       identifier
     | bitwidth
     | "(" ~ width_expr ~ ")"
 }
 
-width_add_op = { "+" | "-" }
+width_add_op = _{ width_add | width_sub }
+
+width_add = { "+" }
+width_sub = { "-" }
 
 // ====== bool_expr ======
 
