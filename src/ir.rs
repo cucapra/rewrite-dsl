@@ -182,14 +182,26 @@ impl Ctx {
         self.width_exprs.push(value)
     }
 
+    pub fn get_width(&self, id: WidthExprId) -> Option<&WidthExpr> {
+        self.width_exprs.get(id)
+    }
+
     /// Inserts a [`BoolExpr`], returning its handle.
     pub fn insert_bool(&mut self, value: BoolExpr) -> BoolExprId {
         self.bool_exprs.push(value)
     }
 
+    pub fn get_bool(&self, id: BoolExprId) -> Option<&BoolExpr> {
+        self.bool_exprs.get(id)
+    }
+
     /// Inserts a [`BitVecExpr`], returning its handle.
     pub fn insert_bv(&mut self, value: BitVecExpr) -> BitVecExprId {
         self.bv_exprs.push(value)
+    }
+
+    pub fn get_bv(&self, id: BitVecExprId) -> Option<&BitVecExpr> {
+        self.bv_exprs.get(id)
     }
 
     /// Returns the handle for the width constant `1`.
