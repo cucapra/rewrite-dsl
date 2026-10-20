@@ -98,7 +98,8 @@ fn emit_bvexpr(rbvexpr: Pair<'_, Rule>, ctx: &mut Ctx) -> BitVecExprId {
     let mut inner = rbvexpr.into_inner();
     let atom = inner.next().unwrap();
     let width_suffix = inner.next().unwrap();
-    let width = emit_wexpr(width_suffix, ctx);
+    let width_atom = width_suffix.into_inner().next().unwrap();
+    let width = emit_watom(width_atom, ctx);
     emit_bvatom(atom, ctx, width)
 }
 
@@ -118,7 +119,7 @@ fn emit_wexpr(rwexpr: Pair<'_, Rule>, ctx: &mut Ctx) -> WidthExprId {
 
             ctx.insert_width(WidthExpr::Ite(bexpr, lexpr, rexpr))
         }
-        Rule::width_add => {
+        Rule::width_binop => {
             let inner = rule.into_inner();
             let ctx = RefCell::new(ctx);
 
@@ -134,7 +135,7 @@ fn emit_wexpr(rwexpr: Pair<'_, Rule>, ctx: &mut Ctx) -> WidthExprId {
                     let op = match op.as_rule() {
                         Rule::width_add => WidthBinOp::Add,
                         Rule::width_sub => WidthBinOp::Sub,
-                        unr => unreachable!("Reached unreachable {:#?}", unr),
+                        unr => unreachable!("Reached unreachable e {:#?}", unr),
                     };
                     ctx.borrow_mut()
                         .insert_width(WidthExpr::BinOp(op, lhs, rhs))
@@ -142,7 +143,7 @@ fn emit_wexpr(rwexpr: Pair<'_, Rule>, ctx: &mut Ctx) -> WidthExprId {
                 .parse(inner)
         }
         unr => {
-            println!("Reached unreachable {:#?}", unr);
+            println!("Reached unreachable d {:#?}", unr);
             unreachable!()
         }
     }
@@ -158,7 +159,7 @@ fn emit_watom(rwatom: Pair<'_, Rule>, ctx: &mut Ctx) -> WidthExprId {
         )),
         Rule::width_expr => emit_wexpr(rule, ctx),
         unr => {
-            println!("Reached unreachable {:#?}", unr);
+            println!("Reached unreachable c {:#?}", unr);
             unreachable!()
         }
     }
@@ -184,7 +185,7 @@ fn emit_bexpr(rbexpr: Pair<'_, Rule>, ctx: &mut Ctx) -> BoolExprId {
                     let expr = match op.as_rule() {
                         Rule::or_op => BoolExpr::Or(lhs, rhs),
                         Rule::and_op => BoolExpr::And(lhs, rhs),
-                        unr => unreachable!("Reached unreachable {:#?}", unr),
+                        unr => unreachable!("Reached unreachable a {:#?}", unr),
                     };
                     ctx.borrow_mut().insert_bool(expr)
                 })
@@ -210,7 +211,7 @@ fn emit_bexpr(rbexpr: Pair<'_, Rule>, ctx: &mut Ctx) -> BoolExprId {
                 Rule::eq => (BoolExpr::Eq(lhs, rhs), false),
                 Rule::gt => (BoolExpr::Gt(lhs, rhs), false),
                 Rule::lt => (BoolExpr::Gt(rhs, lhs), false),
-                unr => unreachable!("Reached unreachable {:#?}", unr),
+                unr => unreachable!("Reached unreachable b {:#?}", unr),
             };
             let expr = ctx.insert_bool(expr);
             if negate {

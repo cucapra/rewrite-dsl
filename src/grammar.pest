@@ -135,14 +135,14 @@ width_expr = _{ width_ite }
 
 width_ite = {
       width_ite_atom
-    | width_add
+    | width_binop
 }
 
 width_ite_atom = { ("(" ~ bool_expr ~ ")" ~ "?" ~ width_expr ~ ":" ~ width_expr) }
 
 width_binop = { width_atom ~ (width_add_op ~ width_atom)* }
 
-width_atom = _{
+width_atom = {
       identifier
     | bitwidth
     | "(" ~ width_expr ~ ")"
