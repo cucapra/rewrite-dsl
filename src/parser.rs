@@ -109,14 +109,9 @@ fn emit_wexpr(rwexpr: Pair<'_, Rule>, ctx: &mut Ctx) -> WidthExprId {
     match rule.as_rule() {
         Rule::width_ite_atom => {
             let mut inner = rule.into_inner();
-            let bexpr = inner.next().unwrap();
-            let lexpr = inner.next().unwrap();
-            let rexpr = inner.next().unwrap();
-
-            let bexpr = emit_bexpr(bexpr, ctx);
-            let lexpr = emit_wexpr(lexpr, ctx);
-            let rexpr = emit_wexpr(rexpr, ctx);
-
+            let bexpr = emit_bexpr(inner.next().unwrap(), ctx);
+            let lexpr = emit_wexpr(inner.next().unwrap(), ctx);
+            let rexpr = emit_wexpr(inner.next().unwrap(), ctx);
             ctx.insert_width(WidthExpr::Ite(bexpr, lexpr, rexpr))
         }
         Rule::width_binop => {
@@ -135,7 +130,7 @@ fn emit_wexpr(rwexpr: Pair<'_, Rule>, ctx: &mut Ctx) -> WidthExprId {
                     let op = match op.as_rule() {
                         Rule::width_add => WidthBinOp::Add,
                         Rule::width_sub => WidthBinOp::Sub,
-                        unr => unreachable!("Reached unreachable e {:#?}", unr),
+                        unr => unreachable!("Reached unreachable {:#?}", unr),
                     };
                     ctx.borrow_mut()
                         .insert_width(WidthExpr::BinOp(op, lhs, rhs))
@@ -143,7 +138,7 @@ fn emit_wexpr(rwexpr: Pair<'_, Rule>, ctx: &mut Ctx) -> WidthExprId {
                 .parse(inner)
         }
         unr => {
-            println!("Reached unreachable d {:#?}", unr);
+            println!("Reached unreachable {:#?}", unr);
             unreachable!()
         }
     }
@@ -159,7 +154,7 @@ fn emit_watom(rwatom: Pair<'_, Rule>, ctx: &mut Ctx) -> WidthExprId {
         )),
         Rule::width_expr => emit_wexpr(rule, ctx),
         unr => {
-            println!("Reached unreachable c {:#?}", unr);
+            println!("Reached unreachable {:#?}", unr);
             unreachable!()
         }
     }
@@ -185,7 +180,7 @@ fn emit_bexpr(rbexpr: Pair<'_, Rule>, ctx: &mut Ctx) -> BoolExprId {
                     let expr = match op.as_rule() {
                         Rule::or_op => BoolExpr::Or(lhs, rhs),
                         Rule::and_op => BoolExpr::And(lhs, rhs),
-                        unr => unreachable!("Reached unreachable a {:#?}", unr),
+                        unr => unreachable!("Reached unreachable {:#?}", unr),
                     };
                     ctx.borrow_mut().insert_bool(expr)
                 })
@@ -211,7 +206,7 @@ fn emit_bexpr(rbexpr: Pair<'_, Rule>, ctx: &mut Ctx) -> BoolExprId {
                 Rule::eq => (BoolExpr::Eq(lhs, rhs), false),
                 Rule::gt => (BoolExpr::Gt(lhs, rhs), false),
                 Rule::lt => (BoolExpr::Gt(rhs, lhs), false),
-                unr => unreachable!("Reached unreachable b {:#?}", unr),
+                unr => unreachable!("Reached unreachable {:#?}", unr),
             };
             let expr = ctx.insert_bool(expr);
             if negate {
@@ -241,8 +236,28 @@ fn emit_bvatom(rbvatom: Pair<'_, Rule>, ctx: &mut Ctx, w: WidthExprId) -> BitVec
     }
 }
 
-fn emit_bvcall(_rbvcall: Pair<'_, Rule>, _ctx: &mut Ctx, _w: WidthExprId) -> BitVecExprId {
-    unimplemented!()
+fn emit_bvcall(rbvcall: Pair<'_, Rule>, ctx: &mut Ctx, w: WidthExprId) -> BitVecExprId {
+    let mut inner = rbvcall.into_inner();
+    let id = inner.next().unwrap();
+    let too_few = || {
+        println!("Too few arguments!");
+        unreachable!()
+    };
+    let mut args = inner.map(|arg| emit_bvexpr(arg, ctx));
+    match id.as_str() {
+        "sext" => {
+            let arg = args.next().unwrap_or_else(too_few);
+            ctx.insert_bv(BitVecExpr::SExt(w, arg))
+        }
+        "zext" => {
+            let arg = args.next().unwrap_or_else(too_few);
+            ctx.insert_bv(BitVecExpr::SExt(w, arg))
+        }
+        unr => {
+            println!("Reached undefined function call {:#?}", unr);
+            unreachable!()
+        }
+    }
 }
 
 fn emit_bvcat(rbvcat: Pair<'_, Rule>, ctx: &mut Ctx, w: WidthExprId) -> BitVecExprId {
