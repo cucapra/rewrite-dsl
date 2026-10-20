@@ -122,7 +122,7 @@ fn emit_wexpr(rwexpr: Pair<'_, Rule>, ctx: &mut Ctx) -> WidthExprId {
                 .map_primary(|atom| {
                     let mut ctx = ctx.borrow_mut();
                     match atom.as_rule() {
-                        Rule::width_atom => emit_watom(atom, &mut **ctx),
+                        Rule::width_atom => emit_watom(atom, &mut ctx),
                         rule => unreachable!("Expr::parse expected atom, found {:?}", rule),
                     }
                 })
@@ -174,7 +174,7 @@ fn emit_bexpr(rbexpr: Pair<'_, Rule>, ctx: &mut Ctx) -> BoolExprId {
             BOOL_PRATT
                 .map_primary(|atom| {
                     let mut ctx = ctx.borrow_mut();
-                    emit_bexpr(atom, &mut **ctx)
+                    emit_bexpr(atom, &mut ctx)
                 })
                 .map_infix(|lhs, op, rhs| {
                     let expr = match op.as_rule() {
