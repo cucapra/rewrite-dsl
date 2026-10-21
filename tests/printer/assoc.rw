@@ -1,0 +1,13 @@
+rule AssocSum(i, j, k) {
+    (a:i + (b:j + c:k):l):m
+    l := j + k + 1;
+    m = l + i + 1;
+    =>
+    ((a:i + b:j):l + c:k):m
+    where
+    l = i + j + 1;
+    m = k + l + 1;
+    under
+    width(a) == 1;
+    width(b) == 1;
+}
