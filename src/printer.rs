@@ -81,7 +81,7 @@ impl PrettyPrintable for BitVecExpr {
             }
             BitVecExpr::Const(wexpr, c) => {
                 let w = ctx.get_width(*wexpr).unwrap();
-                format!("{}:{}", c.to_string(), w.pretty_print(ctx))
+                format!("{}:{}", c, w.pretty_print(ctx))
             }
             BitVecExpr::UnArith(wexpr, op, expr) => {
                 let w = ctx.get_width(*wexpr).unwrap();
