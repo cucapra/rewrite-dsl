@@ -7,12 +7,9 @@ use pest::{
 };
 use pest_derive::Parser;
 
-use crate::{
-    ir::{
-        BitVecBinArithOp, BitVecExpr, BitVecExprId, BitVecUnArithOp, BoolExpr, BoolExprId, Ctx,
-        RwProg, RwRule, WidthBinOp, WidthExpr, WidthExprId,
-    },
-    printer::PrettyPrintable,
+use crate::ir::{
+    BitVecBinArithOp, BitVecExpr, BitVecExprId, BitVecUnArithOp, BoolExpr, BoolExprId, Ctx, RwProg,
+    RwRule, WidthBinOp, WidthExpr, WidthExprId,
 };
 
 lazy_static::lazy_static! {
@@ -50,9 +47,7 @@ pub fn parse_rw_file(file: &str, ctx: &mut Ctx) -> RwProg {
         .expect("Could not parse file.")
         .next()
         .unwrap();
-    let prog: Vec<RwRule> = emit_prog(rprog, ctx);
-    println!("{}", prog.pretty_print(ctx));
-    prog
+    emit_prog(rprog, ctx)
 }
 
 fn emit_prog(rprog: Pair<'_, Rule>, ctx: &mut Ctx) -> RwProg {

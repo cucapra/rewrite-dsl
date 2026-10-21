@@ -1,5 +1,0 @@
-rule AddRZero(i) {
-    (a:i + 0x0:i):i
-    =>
-    a:i
-}
