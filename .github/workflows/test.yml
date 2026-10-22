@@ -23,7 +23,7 @@ jobs:
           - nightly
         
         test-code:
-          - "make test"
+          - "just test"
 
     steps:
       - uses: actions/checkout@v7
@@ -55,6 +55,8 @@ jobs:
 
       - name: Install Turnt
         run: uv tool install turnt
+
+      - uses: taiki-e/install-action@just
 
       - name: Run test
         run: ${{ matrix.test-code }}
