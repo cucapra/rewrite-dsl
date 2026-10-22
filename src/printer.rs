@@ -13,8 +13,8 @@ impl PrettyPrintable for WidthExpr {
             WidthExpr::Var(v) => v.to_string(),
             WidthExpr::Const(c) => c.to_string(),
             WidthExpr::BinOp(op, lexpr, rexpr) => {
-                let lw = ctx.get_width(*lexpr).unwrap();
-                let rw = ctx.get_width(*rexpr).unwrap();
+                let lw = &ctx[*lexpr];
+                let rw = &ctx[*rexpr];
                 format!(
                     "({} {} {})",
                     lw.pretty_print(ctx),
@@ -26,9 +26,9 @@ impl PrettyPrintable for WidthExpr {
                 )
             }
             WidthExpr::Ite(bexpr, lexpr, rexpr) => {
-                let b = ctx.get_bool(*bexpr).unwrap();
-                let lw = ctx.get_width(*lexpr).unwrap();
-                let rw = ctx.get_width(*rexpr).unwrap();
+                let b = &ctx[*bexpr];
+                let lw = &ctx[*lexpr];
+                let rw = &ctx[*rexpr];
                 format!(
                     "({} ? {} : {})",
                     b.pretty_print(ctx),
@@ -45,27 +45,27 @@ impl PrettyPrintable for BoolExpr {
         match self {
             BoolExpr::Const(b) => b.to_string(),
             BoolExpr::Not(bexpr) => {
-                let b = ctx.get_bool(*bexpr).unwrap();
+                let b = &ctx[*bexpr];
                 format!("(!{})", b.pretty_print(ctx))
             }
             BoolExpr::Or(lbexpr, rbexpr) => {
-                let lb = ctx.get_bool(*lbexpr).unwrap();
-                let rb = ctx.get_bool(*rbexpr).unwrap();
+                let lb = &ctx[*lbexpr];
+                let rb = &ctx[*rbexpr];
                 format!("({} || {})", lb.pretty_print(ctx), rb.pretty_print(ctx))
             }
             BoolExpr::And(lbexpr, rbexpr) => {
-                let lb = ctx.get_bool(*lbexpr).unwrap();
-                let rb = ctx.get_bool(*rbexpr).unwrap();
+                let lb = &ctx[*lbexpr];
+                let rb = &ctx[*rbexpr];
                 format!("({} && {})", lb.pretty_print(ctx), rb.pretty_print(ctx))
             }
             BoolExpr::Gt(lwexpr, rwexpr) => {
-                let lw = ctx.get_width(*lwexpr).unwrap();
-                let rw = ctx.get_width(*rwexpr).unwrap();
+                let lw = &ctx[*lwexpr];
+                let rw = &ctx[*rwexpr];
                 format!("({} > {})", lw.pretty_print(ctx), rw.pretty_print(ctx))
             }
             BoolExpr::Eq(lwexpr, rwexpr) => {
-                let lw = ctx.get_width(*lwexpr).unwrap();
-                let rw = ctx.get_width(*rwexpr).unwrap();
+                let lw = &ctx[*lwexpr];
+                let rw = &ctx[*rwexpr];
                 format!("({} == {})", lw.pretty_print(ctx), rw.pretty_print(ctx))
             }
         }
@@ -76,16 +76,16 @@ impl PrettyPrintable for BitVecExpr {
     fn pretty_print(&self, ctx: &Ctx) -> String {
         match self {
             BitVecExpr::Var(wexpr, v) => {
-                let w = ctx.get_width(*wexpr).unwrap();
+                let w = &ctx[*wexpr];
                 format!("{}:{}", v, w.pretty_print(ctx))
             }
             BitVecExpr::Const(wexpr, c) => {
-                let w = ctx.get_width(*wexpr).unwrap();
+                let w = &ctx[*wexpr];
                 format!("{}:{}", c, w.pretty_print(ctx))
             }
             BitVecExpr::UnArith(wexpr, op, expr) => {
-                let w = ctx.get_width(*wexpr).unwrap();
-                let e = ctx.get_bv(*expr).unwrap();
+                let w = &ctx[*wexpr];
+                let e = &ctx[*expr];
                 format!(
                     "({}{}):{}",
                     match op {
@@ -97,9 +97,9 @@ impl PrettyPrintable for BitVecExpr {
                 )
             }
             BitVecExpr::BinArith(wexpr, op, lexpr, rexpr) => {
-                let w = ctx.get_width(*wexpr).unwrap();
-                let l = ctx.get_bv(*lexpr).unwrap();
-                let r = ctx.get_bv(*rexpr).unwrap();
+                let w = &ctx[*wexpr];
+                let l = &ctx[*lexpr];
+                let r = &ctx[*rexpr];
                 format!(
                     "({} {} {}):{}",
                     l.pretty_print(ctx),
@@ -114,8 +114,8 @@ impl PrettyPrintable for BitVecExpr {
             }
             BitVecExpr::Cmp(op, lexpr, rexpr) => {
                 let w = 1.to_string();
-                let l = ctx.get_bv(*lexpr).unwrap();
-                let r = ctx.get_bv(*rexpr).unwrap();
+                let l = &ctx[*lexpr];
+                let r = &ctx[*rexpr];
                 format!(
                     "({} {} {}):{}",
                     l.pretty_print(ctx),
@@ -128,9 +128,9 @@ impl PrettyPrintable for BitVecExpr {
                 )
             }
             BitVecExpr::Cat(wexpr, lexpr, rexpr) => {
-                let w = ctx.get_width(*wexpr).unwrap();
-                let l = ctx.get_bv(*lexpr).unwrap();
-                let r = ctx.get_bv(*rexpr).unwrap();
+                let w = &ctx[*wexpr];
+                let l = &ctx[*lexpr];
+                let r = &ctx[*rexpr];
                 format!(
                     "{{{}, {}}}:{}",
                     l.pretty_print(ctx),
@@ -139,10 +139,10 @@ impl PrettyPrintable for BitVecExpr {
                 )
             }
             BitVecExpr::Ite(wexpr, lexpr, mexpr, rexpr) => {
-                let w = ctx.get_width(*wexpr).unwrap();
-                let l = ctx.get_bv(*lexpr).unwrap();
-                let m = ctx.get_bv(*mexpr).unwrap();
-                let r = ctx.get_bv(*rexpr).unwrap();
+                let w = &ctx[*wexpr];
+                let l = &ctx[*lexpr];
+                let m = &ctx[*mexpr];
+                let r = &ctx[*rexpr];
                 format!(
                     "(({} ? {} : {}):{})",
                     l.pretty_print(ctx),
@@ -152,13 +152,13 @@ impl PrettyPrintable for BitVecExpr {
                 )
             }
             BitVecExpr::SExt(wexpr, expr) => {
-                let w = ctx.get_width(*wexpr).unwrap();
-                let e = ctx.get_bv(*expr).unwrap();
+                let w = &ctx[*wexpr];
+                let e = &ctx[*expr];
                 format!("sext({}):{}", e.pretty_print(ctx), w.pretty_print(ctx))
             }
             BitVecExpr::ZExt(wexpr, expr) => {
-                let w = ctx.get_width(*wexpr).unwrap();
-                let e = ctx.get_bv(*expr).unwrap();
+                let w = &ctx[*wexpr];
+                let e = &ctx[*expr];
                 format!("zext({}):{}", e.pretty_print(ctx), w.pretty_print(ctx))
             }
         }
@@ -168,8 +168,8 @@ impl PrettyPrintable for BitVecExpr {
 impl PrettyPrintable for RwRule {
     fn pretty_print(&self, ctx: &Ctx) -> String {
         let nlindent = "\n    ";
-        let l = ctx.get_bv(self.lhs).unwrap();
-        let r = ctx.get_bv(self.rhs).unwrap();
+        let l = &ctx[self.lhs];
+        let r = &ctx[self.rhs];
         format!(
             "rule {}({}) {{{nlindent}{}{nlindent}=>{nlindent}{}\n}}",
             self.name,
