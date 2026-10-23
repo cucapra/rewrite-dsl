@@ -94,6 +94,9 @@ lt  = { "<" }
 and_op = { "&" }
 or_op  = { "|" }
 
+bool_and_op = { "&&" }
+bool_or_op  = { "||" }
+
 func_call = {
       identifier
       ~ "("
@@ -121,11 +124,10 @@ octal   = @{ ASCII_OCT_DIGIT+ }
 hex     = @{ ASCII_HEX_DIGIT+ }
 
 num_lit = ${
-      "0"
-      ~ ( "d" ~ decimal
-            | "b" ~ binary
+      ("0" ~ ("b" ~ binary
             | "x" ~ hex
-            | "o" ~ octal )
+            | "o" ~ octal ))
+      | decimal
 }
 
 
@@ -157,8 +159,8 @@ width_sub = { "-" }
 
 bool_expr = _{ bool_or }
 
-bool_or  = { bool_and ~ (or_op ~ bool_and)* }
-bool_and = { bool_atom ~ (and_op ~ bool_atom)* }
+bool_or  = { bool_and ~ (bool_and_op ~ bool_and)* }
+bool_and = { bool_atom ~ (bool_or_op ~ bool_atom)* }
 
 bool_atom = _{
       bool_not

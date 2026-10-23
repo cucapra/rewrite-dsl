@@ -23,6 +23,20 @@ lazy_static::lazy_static! {
         .op(Op::infix(Rule::and_op, Assoc::Left));
 }
 
+fn parse_num_lit(text: &str) -> Result<u64, std::num::ParseIntError> {
+    let (digits, radix) = if let Some(digits) = text.strip_prefix("0b") {
+        (digits, 2)
+    } else if let Some(digits) = text.strip_prefix("0x") {
+        (digits, 16)
+    } else if let Some(digits) = text.strip_prefix("0o") {
+        (digits, 8)
+    } else {
+        (text, 10)
+    };
+
+    u64::from_str_radix(digits, radix)
+}
+
 #[derive(Parser)]
 #[grammar = "grammar.pest"]
 struct RwParser;
@@ -33,9 +47,7 @@ pub fn parse_rw_file(file: &str, ctx: &mut Ctx) -> RwProg {
         .expect("Could not parse file.")
         .next()
         .unwrap();
-    let prog: Vec<RwRule> = emit_prog(rprog, ctx);
-    println!("{:#?}", prog);
-    prog
+    emit_prog(rprog, ctx)
 }
 
 fn emit_prog(rprog: Pair<'_, Rule>, ctx: &mut Ctx) -> RwProg {
@@ -178,8 +190,8 @@ fn emit_bexpr(rbexpr: Pair<'_, Rule>, ctx: &mut Ctx) -> BoolExprId {
                 })
                 .map_infix(|lhs, op, rhs| {
                     let expr = match op.as_rule() {
-                        Rule::or_op => BoolExpr::Or(lhs, rhs),
-                        Rule::and_op => BoolExpr::And(lhs, rhs),
+                        Rule::bool_or_op => BoolExpr::Or(lhs, rhs),
+                        Rule::bool_and_op => BoolExpr::And(lhs, rhs),
                         unr => unreachable!("Reached unreachable {:#?}", unr),
                     };
                     ctx.borrow_mut().insert_bool(expr)
@@ -223,7 +235,7 @@ fn emit_bvatom(rbvatom: Pair<'_, Rule>, ctx: &mut Ctx, w: WidthExprId) -> BitVec
     let mut inner = rbvatom.into_inner();
     let rule = inner.next().unwrap();
     match rule.as_rule() {
-        Rule::num_lit => ctx.insert_bv(BitVecExpr::Const(w, rule.as_str().parse::<u64>().unwrap())),
+        Rule::num_lit => ctx.insert_bv(BitVecExpr::Const(w, parse_num_lit(rule.as_str()).unwrap())),
         Rule::func_call => emit_bvcall(rule, ctx, w),
         Rule::identifier => ctx.insert_bv(BitVecExpr::Var(w, rule.as_str().to_string())),
         Rule::concat_expr => emit_bvcat(rule, ctx, w),
