@@ -1,5 +1,7 @@
 use cranelift_entity::{PrimaryMap, entity_impl};
-use std::{borrow::Cow, num::NonZeroU32, ops::Index};
+use itertools::Itertools;
+use std::fmt;
+use std::{borrow::Cow, collections::HashMap, num::NonZeroU32, ops::Index};
 
 /// Bit-width of a value.
 pub type Width = NonZeroU32;
@@ -174,7 +176,45 @@ impl Index<BitVecExprId> for Ctx {
 }
 
 /// Concrete widths assigned to each width variable.
-pub type WidthAssignment = std::collections::HashMap<String, u32>;
+pub struct WidthAssignment(std::collections::HashMap<String, u32>);
+
+impl WidthAssignment {
+    /// Creates a vector of all possible width assignments for a vector of variables.
+    ///
+    /// WARNING: This is, like, crazy bad. Like, len(vars)^len(from..to) bad.
+    /// TODO: Make less bad.
+    pub fn from_range(vars: &[String], from: u32, to: u32) -> Vec<Self> {
+        (from..to)
+            .combinations_with_replacement(vars.len())
+            .map(|avec| {
+                let mut wa = HashMap::<String, u32>::new();
+                avec.iter().zip(vars).for_each(|(w, v)| {
+                    wa.insert(v.to_string(), *w);
+                });
+                WidthAssignment(wa)
+            })
+            .collect_vec()
+    }
+}
+
+impl fmt::Display for WidthAssignment {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let WidthAssignment(wa) = self;
+        write!(
+            f,
+            "{}",
+            wa.iter().map(|(v, w)| format!("{}: {}", v, w)).join(", ")
+        )
+    }
+}
+
+impl Index<&String> for WidthAssignment {
+    type Output = u32;
+    fn index(&self, v: &String) -> &Self::Output {
+        let WidthAssignment(wa) = &self;
+        wa.get(v).unwrap()
+    }
+}
 
 impl Ctx {
     /// Inserts a [`WidthExpr`], returning its handle.

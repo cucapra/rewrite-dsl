@@ -10,3 +10,5 @@ easy-smt = "0.3.2"
 pest = "2.9.1"
 pest_derive = "2.9.1"
 lazy_static = "1"
+clap = { version = "4.6.7", features = ["derive"] }
+itertools = "0.15.0"
