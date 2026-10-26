@@ -1,4 +1,4 @@
-use std::{cell::RefCell, fs, num::NonZeroU32, unimplemented};
+use std::{cell::RefCell, fs, num::NonZeroU32, path::PathBuf, unimplemented};
 
 use pest::{
     Parser,
@@ -41,7 +41,7 @@ fn parse_num_lit(text: &str) -> Result<u64, std::num::ParseIntError> {
 #[grammar = "grammar.pest"]
 struct RwParser;
 
-pub fn parse_rw_file(file: &str, ctx: &mut Ctx) -> RwProg {
+pub fn parse_rw_file(file: &PathBuf, ctx: &mut Ctx) -> RwProg {
     let file = fs::read_to_string(file).expect("Could not read file.");
     let rprog = RwParser::parse(Rule::file, &file)
         .expect("Could not parse file.")
