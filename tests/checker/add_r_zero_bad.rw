@@ -1,0 +1,5 @@
+rule AddRZero(i) {
+    (a:i + 0x1:i):i
+    =>
+    a:i
+}

@@ -1,8 +1,10 @@
 use cranelift_entity::{PrimaryMap, entity_impl};
-use std::{borrow::Cow, num::NonZeroU32, ops::Index};
+use itertools::Itertools;
+use std::fmt;
+use std::{borrow::Cow, collections::HashMap, ops::Index};
 
 /// Bit-width of a value.
-pub type Width = NonZeroU32;
+pub type Width = u32;
 
 /// Arena handle for a [`WidthExpr`].
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Default)]
@@ -134,7 +136,7 @@ impl Default for Ctx {
     /// `width_one`, `bv_false`, `bv_true`.
     fn default() -> Self {
         let mut width_exprs: PrimaryMap<WidthExprId, WidthExpr> = Default::default();
-        let width_one = width_exprs.push(WidthExpr::Const(NonZeroU32::new(1).unwrap()));
+        let width_one = width_exprs.push(WidthExpr::Const(1));
         let mut bv_exprs: PrimaryMap<BitVecExprId, BitVecExpr> = Default::default();
         let bv_false = bv_exprs.push(BitVecExpr::Const(width_one, 0));
         let bv_true = bv_exprs.push(BitVecExpr::Const(width_one, 1)); // Arbitrary choice
@@ -174,7 +176,46 @@ impl Index<BitVecExprId> for Ctx {
 }
 
 /// Concrete widths assigned to each width variable.
-pub type WidthAssignment = std::collections::HashMap<String, u32>;
+pub struct WidthAssignment(std::collections::HashMap<String, Width>);
+
+impl WidthAssignment {
+    /// Creates a vector of all possible width assignments for a vector of variables.
+    ///
+    /// WARNING: This is, like, crazy bad. Like, len(vars)^len(from..to) bad.
+    /// TODO: Make less bad.
+    pub fn exhaustive_in_range(vars: &[String], from: u32, to: u32) -> Vec<Self> {
+        (from..to)
+            .combinations_with_replacement(vars.len())
+            .map(|avec| {
+                let wa: HashMap<_, _> = avec
+                    .iter()
+                    .zip(vars)
+                    .map(|(w, v)| (v.to_string(), *w))
+                    .collect();
+                WidthAssignment(wa)
+            })
+            .collect_vec()
+    }
+}
+
+impl fmt::Display for WidthAssignment {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let WidthAssignment(wa) = self;
+        write!(
+            f,
+            "{}",
+            wa.iter().map(|(v, w)| format!("{}: {}", v, w)).join(", ")
+        )
+    }
+}
+
+impl Index<&String> for WidthAssignment {
+    type Output = Width;
+    fn index(&self, v: &String) -> &Self::Output {
+        let WidthAssignment(wa) = &self;
+        wa.get(v).unwrap()
+    }
+}
 
 impl Ctx {
     /// Inserts a [`WidthExpr`], returning its handle.
@@ -236,7 +277,7 @@ impl Ctx {
     pub fn eval_width(&self, expr: WidthExprId, assgn: &WidthAssignment) -> u32 {
         match &self[expr] {
             WidthExpr::Var(s) => assgn[s],
-            WidthExpr::Const(w) => (*w).into(),
+            WidthExpr::Const(w) => *w,
             WidthExpr::BinOp(op, we1, we2) => {
                 let l = self.eval_width(*we1, assgn);
                 let r = self.eval_width(*we2, assgn);

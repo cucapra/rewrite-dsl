@@ -1,4 +1,4 @@
-use std::{cell::RefCell, fs, num::NonZeroU32, unimplemented};
+use std::{cell::RefCell, fs, path::PathBuf, unimplemented};
 
 use pest::{
     Parser,
@@ -41,7 +41,7 @@ fn parse_num_lit(text: &str) -> Result<u64, std::num::ParseIntError> {
 #[grammar = "grammar.pest"]
 struct RwParser;
 
-pub fn parse_rw_file(file: &str, ctx: &mut Ctx) -> RwProg {
+pub fn parse_rw_file(file: &PathBuf, ctx: &mut Ctx) -> RwProg {
     let file = fs::read_to_string(file).expect("Could not read file.");
     let rprog = RwParser::parse(Rule::file, &file)
         .expect("Could not parse file.")
@@ -161,9 +161,7 @@ fn emit_watom(rwatom: Pair<'_, Rule>, ctx: &mut Ctx) -> WidthExprId {
     let rule = inner.next().unwrap();
     match rule.as_rule() {
         Rule::identifier => ctx.insert_width(WidthExpr::Var(rule.as_str().to_string())),
-        Rule::bitwidth => ctx.insert_width(WidthExpr::Const(
-            rule.as_str().parse::<NonZeroU32>().unwrap(),
-        )),
+        Rule::bitwidth => ctx.insert_width(WidthExpr::Const(rule.as_str().parse::<u32>().unwrap())),
         Rule::width_expr => emit_wexpr(rule, ctx),
         unr => {
             println!("Reached unreachable {:#?}", unr);

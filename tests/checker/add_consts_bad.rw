@@ -1,0 +1,5 @@
+rule AddConsts(i) {
+    ((X:i + (Y:i + a:i):i):i + 0x1:i):i
+    =>
+    ((X:i + Y:i):i + a:i):i
+}
