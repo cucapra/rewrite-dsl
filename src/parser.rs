@@ -1,4 +1,4 @@
-use std::{cell::RefCell, fs, num::NonZeroU32, path::PathBuf, unimplemented};
+use std::{cell::RefCell, fs, path::PathBuf, unimplemented};
 
 use pest::{
     Parser,
@@ -161,9 +161,7 @@ fn emit_watom(rwatom: Pair<'_, Rule>, ctx: &mut Ctx) -> WidthExprId {
     let rule = inner.next().unwrap();
     match rule.as_rule() {
         Rule::identifier => ctx.insert_width(WidthExpr::Var(rule.as_str().to_string())),
-        Rule::bitwidth => ctx.insert_width(WidthExpr::Const(
-            rule.as_str().parse::<NonZeroU32>().unwrap(),
-        )),
+        Rule::bitwidth => ctx.insert_width(WidthExpr::Const(rule.as_str().parse::<u32>().unwrap())),
         Rule::width_expr => emit_wexpr(rule, ctx),
         unr => {
             println!("Reached unreachable {:#?}", unr);

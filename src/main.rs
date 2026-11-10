@@ -41,7 +41,7 @@ fn main() {
 
     match args.mode {
         Mode::Check { from, to } => prog.iter().for_each(|r| {
-            let a = WidthAssignment::from_range(&r.width_vars, from, to + 1);
+            let a = WidthAssignment::exhaustive_in_range(&r.width_vars, from, to + 1);
             a.iter()
                 .map(|a| (a, ctx.check_rule(r, a)))
                 .filter_map(|res| match res {
