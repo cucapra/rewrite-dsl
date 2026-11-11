@@ -1,7 +1,10 @@
 // With inspiration from the Calyx grammar
 
 WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
-COMMENT = _{ ("//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE) | "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+COMMENT = _{
+      ("//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE?)
+    | "/*" ~ (!"*/" ~ ANY)* ~ "*/"
+}
 
 // Semicolon
 semi = _{ ";" }
@@ -15,32 +18,36 @@ bitwidth = @{ ASCII_DIGIT+ }
 
 file = {
       SOI
-      ~ rwrule*
-      ~ EOI
+    ~ rwrule*
+    ~ EOI
 }
 
-rule_word = @{ "rule"  ~ !(ASCII_ALPHANUMERIC | "_" | "-") }
+rule_word  = @{ "rule"  ~ !(ASCII_ALPHANUMERIC | "_" | "-") }
+where_word = @{ "where" ~ !(ASCII_ALPHANUMERIC | "_" | "-") }
+
+if_word   = @{ "if"   ~ !(ASCII_ALPHANUMERIC | "_" | "-") }
+then_word = @{ "then" ~ !(ASCII_ALPHANUMERIC | "_" | "-") }
+else_word = @{ "else" ~ !(ASCII_ALPHANUMERIC | "_" | "-") }
 
 rwrule = {
       rule_word
-      ~ identifier
-      ~ params
-      ~ "{"
-      ~ rule_body
-      ~ "}"
+    ~ identifier
+    ~ params
+    ~ "{"
+    ~ rule_body
+    ~ "}"
 }
 
-params = { "("
-      ~ (identifier ~ ("," ~ identifier)*)?
-      ~ ")"
+params = {
+      "("
+    ~ (identifier ~ ("," ~ identifier)*)?
+    ~ ")"
 }
 
 rule_body = { lhs ~ "=>" ~ rhs ~ where_clause? }
 
 lhs = _{ bv_expr }
 rhs = _{ bv_expr }
-
-where_word = @{ "where"  ~ !(ASCII_ALPHANUMERIC | "_" | "-") }
 
 where_clause = { where_word ~ (assignment ~ semi)+ }
 
@@ -55,18 +62,29 @@ width_suffix = { ":" ~ width_atom }
 
 bv_atom = {
       num_lit
+    | if_bv_expr
     | func_call
     | identifier
     | concat_expr
     | "(" ~ unary_expr ~ ")"
     | "(" ~ ary_expr ~ ")"
+    | "(" ~ if_bv_expr ~ ")"
+}
+
+if_bv_expr = {
+      if_word
+    ~ bv_expr
+    ~ then_word
+    ~ bv_expr
+    ~ else_word
+    ~ bv_expr
 }
 
 unary_expr = { unary_op ~ bv_expr }
+
 ary_expr = { bv_expr ~ ary_tail }
-ary_tail = { binary_tail | ternary_tail }
+ary_tail = { binary_tail }
 binary_tail = { bin_op ~ bv_expr }
-ternary_tail = { "?" ~ bv_expr ~ ":" ~ bv_expr }
 
 bin_op = _{ add_op | mul_op | shift_op | cmp_op | and_op | or_op | xor_op }
 
@@ -99,17 +117,17 @@ bool_or_op  = { "||" }
 
 func_call = {
       identifier
-      ~ "("
-      ~ (bv_expr ~ ("," ~ bv_expr)*)?
-      ~ ")"
+    ~ "("
+    ~ (bv_expr ~ ("," ~ bv_expr)*)?
+    ~ ")"
 }
 
 concat_expr = {
       "{"
-      ~ l_expr
-      ~ ","
-      ~ r_expr
-      ~ "}"
+    ~ l_expr
+    ~ ","
+    ~ r_expr
+    ~ "}"
 }
 
 l_expr = { bv_expr }
@@ -126,8 +144,8 @@ hex     = @{ ASCII_HEX_DIGIT+ }
 num_lit = ${
       ("0" ~ ("b" ~ binary
             | "x" ~ hex
-            | "o" ~ octal ))
-      | decimal
+            | "o" ~ octal))
+    | decimal
 }
 
 
@@ -140,7 +158,14 @@ width_ite = {
     | width_binop
 }
 
-width_ite_atom = { ("(" ~ bool_expr ~ ")" ~ "?" ~ width_expr ~ ":" ~ width_expr) }
+width_ite_atom = {
+      if_word
+    ~ bool_expr
+    ~ then_word
+    ~ width_expr
+    ~ else_word
+    ~ width_expr
+}
 
 width_binop = { width_atom ~ (width_add_op ~ width_atom)* }
 
@@ -155,12 +180,13 @@ width_add_op = _{ width_add | width_sub }
 width_add = { "+" }
 width_sub = { "-" }
 
+
 // ====== bool_expr ======
 
 bool_expr = _{ bool_or }
 
-bool_or  = { bool_and ~ (bool_and_op ~ bool_and)* }
-bool_and = { bool_atom ~ (bool_or_op ~ bool_atom)* }
+bool_or  = { bool_and ~ (bool_or_op ~ bool_and)* }
+bool_and = { bool_atom ~ (bool_and_op ~ bool_atom)* }
 
 bool_atom = _{
       bool_not
