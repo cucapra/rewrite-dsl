@@ -2,7 +2,7 @@
 
 ## Lexical forms
 
-$$
+```math
 \begin{aligned}
 \langle\text{letter}\rangle
   &\coloneqq \texttt{A–Z} \mid \texttt{a–z} \\
@@ -32,11 +32,11 @@ $$
   &\coloneqq \langle\text{bin-lit}\rangle \mid \langle\text{oct-lit}\rangle
           \mid \langle\text{hex-lit}\rangle \mid \langle\text{dec-lit}\rangle
 \end{aligned}
-$$
+```
 
 ## Rewrite rules
 
-$$
+```math
 \begin{aligned}
 \langle\text{file}\rangle
   &\coloneqq \langle\text{rw-rule}\rangle^* \\
@@ -54,11 +54,11 @@ $$
 \langle\text{assgn}\rangle
   &\coloneqq \langle\text{id}\rangle\;\texttt{:=}\;\langle\text{w-expr}\rangle
 \end{aligned}
-$$
+```
 
 ## Bitvector expressions
 
-$$
+```math
 \begin{aligned}
 \langle\text{bv-expr}\rangle
   &\coloneqq \langle\text{bv-atom}\rangle\;[\langle\text{w-suffix}\rangle] \\
@@ -95,13 +95,13 @@ $$
 \langle\text{concat}\rangle
   &\coloneqq \texttt{\{}\;\langle\text{bv-expr}\rangle\;\texttt{,}\;\langle\text{bv-expr}\rangle\;\texttt{\}}
 \end{aligned}
-$$
+```
 
 $^\dag$​Assumed to have a width of one.
 
 ## Width expressions
 
-$$
+```math
 \begin{aligned}
 \langle\text{w-expr}\rangle
   &\coloneqq \langle\text{w-cond}\rangle \mid \langle\text{w-binary}\rangle \\
@@ -117,11 +117,11 @@ $$
 \langle\text{w-add-op}\rangle
   &\coloneqq \texttt{+} \mid \texttt{-}
 \end{aligned}
-$$
+```
 
 ## Boolean expressions
 
-$$
+```math
 \begin{aligned}
 \langle\text{bool-expr}\rangle
   &\coloneqq \langle\text{bool-or}\rangle \\
@@ -146,4 +146,4 @@ $$
   &\coloneqq \texttt{>=} \mid \texttt{<=} \mid \texttt{==}
       \mid \texttt{>} \mid \texttt{<}
 \end{aligned}
-$$
+```
