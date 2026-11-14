@@ -41,7 +41,7 @@
 \langle\text{file}\rangle
   &\coloneqq \langle\text{rw-rule}\rangle^* \\
 \langle\text{rw-rule}\rangle
-  &\coloneqq \text{\tt rule}\mathtt{rule}\;\langle\text{id}\rangle\;\langle\text{params}\rangle\;
+  &\coloneqq \texttt{rule}\;\langle\text{id}\rangle\;\langle\text{params}\rangle\;
      \texttt{\{}\;\langle\text{rule-body}\rangle\;\texttt{\}} \\
 \langle\text{params}\rangle
   &\coloneqq \texttt{(}\;[\langle\text{id}\rangle
