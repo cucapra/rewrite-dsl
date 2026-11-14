@@ -74,7 +74,7 @@
       \mid \texttt{(}\;\langle\text{bin-expr}\rangle\;\texttt{)}
       \mid \texttt{(}\;\langle\text{bv-cond}\rangle\;\texttt{)} \\
 \langle\text{bv-cond}\rangle
-  &\coloneqq \texttt{if}\;\langle\text{bv-expr}\rangle^\dag\;\texttt{then}\;
+  &\coloneqq \texttt{if}\;\langle\text{bv-expr}\rangle^\dagger\;\texttt{then}\;
       \langle\text{bv-expr}\rangle\;\texttt{else}\;\langle\text{bv-expr}\rangle \\
 \langle\text{un-expr}\rangle
   &\coloneqq \langle\text{un-op}\rangle\;\langle\text{bv-expr}\rangle \\
@@ -97,7 +97,7 @@
 \end{aligned}
 ```
 
-$^\dag$​Assumed to have a width of one.
+$^\dagger$​Assumed to have a width of one.
 
 ## Width expressions
 
