@@ -30,7 +30,7 @@ impl PrettyPrintable for WidthExpr {
                 let lw = &ctx[*lexpr];
                 let rw = &ctx[*rexpr];
                 format!(
-                    "({} ? {} : {})",
+                    "(if {} then {} else {})",
                     b.pretty_print(ctx),
                     lw.pretty_print(ctx),
                     rw.pretty_print(ctx)
@@ -144,7 +144,7 @@ impl PrettyPrintable for BitVecExpr {
                 let m = &ctx[*mexpr];
                 let r = &ctx[*rexpr];
                 format!(
-                    "(({} ? {} : {}):{})",
+                    "(if {} then {} else {}):{}",
                     l.pretty_print(ctx),
                     m.pretty_print(ctx),
                     r.pretty_print(ctx),

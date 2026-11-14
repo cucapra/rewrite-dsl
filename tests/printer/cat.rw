@@ -1,0 +1,11 @@
+rule ConcatBasic(i) {
+    {a:8, b:8}:16
+    =>
+    {b:8, a:8}:16
+}
+
+rule ConcatNested(i) {
+    {{a:8, b:8}:16, c:8}:24
+    =>
+    {a:8, {b:8, c:8}:16}:24
+}

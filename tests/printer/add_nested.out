@@ -1,0 +1,11 @@
+rule AddNested(i) {
+    ((a:i + b:i):i + (c:i + d:i):i):i
+    =>
+    ((a:i + c:i):i + (b:i + d:i):i):i
+}
+
+rule AddZeroNested(i) {
+    ((a:i + 0:i):i + b:i):i
+    =>
+    (a:i + b:i):i
+}
