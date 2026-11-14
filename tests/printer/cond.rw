@@ -1,0 +1,11 @@
+rule Select(i) {
+    (if cond:1 then a:i else b:i):i
+    =>
+    a:i
+}
+
+rule NestedSelect(i) {
+    (if cond:1 then (if other:1 then a:i else b:i):i else c:i):i
+    =>
+    a:i
+}

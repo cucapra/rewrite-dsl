@@ -1,0 +1,5 @@
+rule WhereExpressions(i, N, M) {
+    a:i
+    =>
+    a:i
+}
