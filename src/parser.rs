@@ -19,8 +19,8 @@ lazy_static::lazy_static! {
 
     static ref BOOL_PRATT: PrattParser<Rule> =
     PrattParser::new()
-        .op(Op::infix(Rule::or_op, Assoc::Left))
-        .op(Op::infix(Rule::and_op, Assoc::Left));
+        .op(Op::infix(Rule::bool_or_op, Assoc::Left))
+        .op(Op::infix(Rule::bool_and_op, Assoc::Left));
 }
 
 fn parse_num_lit(text: &str) -> Result<u64, std::num::ParseIntError> {
@@ -121,8 +121,11 @@ fn emit_wexpr(rwexpr: Pair<'_, Rule>, ctx: &mut Ctx) -> WidthExprId {
     match rule.as_rule() {
         Rule::width_ite_atom => {
             let mut inner = rule.into_inner();
+            inner.next().unwrap();
             let bexpr = emit_bexpr(inner.next().unwrap(), ctx);
+            inner.next().unwrap();
             let lexpr = emit_wexpr(inner.next().unwrap(), ctx);
+            inner.next().unwrap(); // else_word
             let rexpr = emit_wexpr(inner.next().unwrap(), ctx);
             ctx.insert_width(WidthExpr::Ite(bexpr, lexpr, rexpr))
         }
@@ -162,7 +165,7 @@ fn emit_watom(rwatom: Pair<'_, Rule>, ctx: &mut Ctx) -> WidthExprId {
     match rule.as_rule() {
         Rule::identifier => ctx.insert_width(WidthExpr::Var(rule.as_str().to_string())),
         Rule::bitwidth => ctx.insert_width(WidthExpr::Const(rule.as_str().parse::<u32>().unwrap())),
-        Rule::width_expr => emit_wexpr(rule, ctx),
+        Rule::width_ite => emit_wexpr(rule, ctx),
         unr => {
             println!("Reached unreachable {:#?}", unr);
             unreachable!()
@@ -239,11 +242,23 @@ fn emit_bvatom(rbvatom: Pair<'_, Rule>, ctx: &mut Ctx, w: WidthExprId) -> BitVec
         Rule::concat_expr => emit_bvcat(rule, ctx, w),
         Rule::unary_expr => emit_bvunop(rule, ctx, w),
         Rule::ary_expr => emit_bvary(rule, ctx, w),
+        Rule::if_bv_expr => emit_bvif(rule, ctx, w),
         unr => {
             println!("Reached unreachable {:#?}", unr);
             unreachable!()
         }
     }
+}
+
+fn emit_bvif(rbvif: Pair<'_, Rule>, ctx: &mut Ctx, w: WidthExprId) -> BitVecExprId {
+    let mut inner = rbvif.into_inner();
+    inner.next().unwrap();
+    let cond = emit_bvexpr(inner.next().unwrap(), ctx);
+    inner.next().unwrap();
+    let lexpr = emit_bvexpr(inner.next().unwrap(), ctx);
+    inner.next().unwrap();
+    let rexpr = emit_bvexpr(inner.next().unwrap(), ctx);
+    ctx.insert_bv(BitVecExpr::Ite(w, cond, lexpr, rexpr))
 }
 
 fn emit_bvcall(rbvcall: Pair<'_, Rule>, ctx: &mut Ctx, w: WidthExprId) -> BitVecExprId {
@@ -272,15 +287,15 @@ fn emit_bvcall(rbvcall: Pair<'_, Rule>, ctx: &mut Ctx, w: WidthExprId) -> BitVec
 
 fn emit_bvcat(rbvcat: Pair<'_, Rule>, ctx: &mut Ctx, w: WidthExprId) -> BitVecExprId {
     let mut inner = rbvcat.into_inner();
-    let lexpr = inner.next().unwrap();
-    let rexpr = inner.next().unwrap();
+    let lexpr = inner.next().unwrap().into_inner().next().unwrap();
+    let rexpr = inner.next().unwrap().into_inner().next().unwrap();
     let expr = BitVecExpr::Cat(w, emit_bvexpr(lexpr, ctx), emit_bvexpr(rexpr, ctx));
     ctx.insert_bv(expr)
 }
 
 fn emit_bvunop(rbvunop: Pair<'_, Rule>, ctx: &mut Ctx, w: WidthExprId) -> BitVecExprId {
     let mut inner = rbvunop.into_inner();
-    let op = inner.next().unwrap();
+    let op = inner.next().unwrap().into_inner().next().unwrap();
     let rexpr = inner.next().unwrap();
     let expr = BitVecExpr::UnArith(
         w,
@@ -310,17 +325,6 @@ fn emit_bvary(rbvary: Pair<'_, Rule>, ctx: &mut Ctx, w: WidthExprId) -> BitVecEx
                 w,
                 emit_bvbinop(binop),
                 emit_bvexpr(lexpr, ctx),
-                emit_bvexpr(rexpr, ctx),
-            )
-        }
-        Rule::ternary_tail => {
-            let mut inner = tail.into_inner();
-            let mexpr = inner.next().unwrap();
-            let rexpr = inner.next().unwrap();
-            BitVecExpr::Ite(
-                w,
-                emit_bvexpr(lexpr, ctx),
-                emit_bvexpr(mexpr, ctx),
                 emit_bvexpr(rexpr, ctx),
             )
         }
