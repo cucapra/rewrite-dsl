@@ -1,0 +1,5 @@
+rule WidthConditional(i, N, M) {
+    a:(if N > 8 && M < 32 || N == 0 then 16 else 8)
+    =>
+    a:i
+}

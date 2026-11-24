@@ -1,0 +1,11 @@
+rule BitwiseNot(i) {
+    (!a:i):i
+    =>
+    a:i
+}
+
+rule Negate(i) {
+    (-a:i):i
+    =>
+    a:i
+}
