@@ -4,7 +4,7 @@ use easy_smt::{ContextBuilder, Response, SExpr};
 
 use crate::ir::{
     BitVecBinArithOp, BitVecCmpOp, BitVecExpr, BitVecExprId, BitVecUnArithOp, Ctx, RwRule,
-    WidthAssignment,
+    WidthAssignment, WidthExprId,
 };
 
 // Extension logics.
@@ -35,6 +35,13 @@ fn smt_extend(smt: &easy_smt::Context, x: SExpr, n: u32, ext: Ext) -> SExpr {
 }
 
 impl Ctx {
+    fn ext_amount(&self, w: WidthExprId, a: BitVecExprId, assgn: &WidthAssignment) -> u32 {
+        let out_w = self.eval_width(w, assgn);
+        let wa = self.eval_width(self.width(a), assgn);
+        assert!(out_w >= wa, "extension target narrower than operand");
+        out_w - wa
+    }
+
     /// Lowers a [`BitVecExpr`] to an SMT-LIB bit-vector term.
     fn to_smt(
         &self,
@@ -58,7 +65,7 @@ impl Ctx {
                     var
                 }
             }
-            BitVecExpr::Const(w, v) => smt.binary(self.eval_width(*w, assgn) as usize, *v as i64),
+            BitVecExpr::Const(w, v) => smt.binary(self.eval_width(*w, assgn) as usize, *v),
             BitVecExpr::BinArith(w, op, a, b) => {
                 let out_w = self.eval_width(*w, assgn);
                 let wa = self.eval_width(self.width(*a), assgn);
@@ -72,6 +79,7 @@ impl Ctx {
                 match op {
                     BitVecBinArithOp::And => smt.bvand(sa, sb),
                     BitVecBinArithOp::Add => smt.bvadd(sa, sb),
+                    BitVecBinArithOp::Sub => smt.bvsub(sa, sb),
                     BitVecBinArithOp::Or => smt.bvor(sa, sb),
                 }
             }
@@ -97,11 +105,11 @@ impl Ctx {
             }
             BitVecExpr::SExt(w, a) => {
                 let sa = self.to_smt(smt, *a, assgn, cache, vars)?;
-                smt_extend(smt, sa, self.eval_width(*w, assgn), Ext::SignExt)
+                smt_extend(smt, sa, self.ext_amount(*w, *a, assgn), Ext::SignExt)
             }
             BitVecExpr::ZExt(w, a) => {
                 let sa = self.to_smt(smt, *a, assgn, cache, vars)?;
-                smt_extend(smt, sa, self.eval_width(*w, assgn), Ext::ZeroExt)
+                smt_extend(smt, sa, self.ext_amount(*w, *a, assgn), Ext::ZeroExt)
             }
             BitVecExpr::UnArith(w, op, a) => {
                 let out_w = self.eval_width(*w, assgn);

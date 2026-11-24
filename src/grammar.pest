@@ -86,14 +86,15 @@ ary_expr = { bv_expr ~ ary_tail }
 ary_tail = { binary_tail }
 binary_tail = { bin_op ~ bv_expr }
 
-bin_op = _{ add_op | mul_op | shift_op | cmp_op | and_op | or_op | xor_op }
+bin_op = _{ add_op | sub_op | mul_op | shift_op | cmp_op | and_op | or_op | xor_op }
 
 unary_op = { not_op | neg_op }
 
 not_op = { "!" }
 neg_op = { "-" }
 
-add_op = { "+" | "-" }
+add_op = { "+" }
+sub_op = { "-" }
 
 mul_op = { "*" }
 

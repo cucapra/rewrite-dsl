@@ -77,9 +77,10 @@ fn emit_rule(rrule: Pair<'_, Rule>, ctx: &mut Ctx) -> RwRule {
                 rule.width_vars = emit_params(inner, ctx);
             }
             Rule::rule_body => {
-                let (lhs, rhs) = emit_body(inner, ctx);
+                let (lhs, rhs, where_cls) = emit_body(inner, ctx);
                 rule.lhs = lhs;
                 rule.rhs = rhs;
+                rule.where_cls = where_cls;
             }
             Rule::rule_word => {}
             unr => {
@@ -97,13 +98,33 @@ fn emit_params(rparams: Pair<'_, Rule>, _ctx: &mut Ctx) -> Vec<String> {
         .collect()
 }
 
-fn emit_body(rbody: Pair<'_, Rule>, ctx: &mut Ctx) -> (BitVecExprId, BitVecExprId) {
+fn emit_body(
+    rbody: Pair<'_, Rule>,
+    ctx: &mut Ctx,
+) -> (BitVecExprId, BitVecExprId, Vec<(String, WidthExprId)>) {
     let mut inner = rbody.into_inner();
     let rlhs = inner.next().unwrap();
     let lhs = emit_bvexpr(rlhs, ctx);
     let rrhs = inner.next().unwrap();
     let rhs = emit_bvexpr(rrhs, ctx);
-    (lhs, rhs)
+    let where_cls = match inner.next() {
+        Some(rwhere) => emit_where(rwhere, ctx),
+        None => Vec::new(),
+    };
+    (lhs, rhs, where_cls)
+}
+
+fn emit_where(rwhere: Pair<'_, Rule>, ctx: &mut Ctx) -> Vec<(String, WidthExprId)> {
+    rwhere
+        .into_inner()
+        .filter(|p| p.as_rule() == Rule::assignment)
+        .map(|assignment| {
+            let mut inner = assignment.into_inner();
+            let name = inner.next().unwrap().as_str().to_string();
+            let w = emit_wexpr(inner.next().unwrap(), ctx);
+            (name, w)
+        })
+        .collect()
 }
 
 fn emit_bvexpr(rbvexpr: Pair<'_, Rule>, ctx: &mut Ctx) -> BitVecExprId {
@@ -276,7 +297,7 @@ fn emit_bvcall(rbvcall: Pair<'_, Rule>, ctx: &mut Ctx, w: WidthExprId) -> BitVec
         }
         "zext" => {
             let arg = args.next().unwrap_or_else(too_few);
-            ctx.insert_bv(BitVecExpr::SExt(w, arg))
+            ctx.insert_bv(BitVecExpr::ZExt(w, arg))
         }
         unr => {
             println!("Reached undefined function call {:#?}", unr);
@@ -339,6 +360,7 @@ fn emit_bvary(rbvary: Pair<'_, Rule>, ctx: &mut Ctx, w: WidthExprId) -> BitVecEx
 fn emit_bvbinop(rbvbinop: Pair<'_, Rule>) -> BitVecBinArithOp {
     match rbvbinop.as_rule() {
         Rule::add_op => BitVecBinArithOp::Add,
+        Rule::sub_op => BitVecBinArithOp::Sub,
         _ => unimplemented!(),
     }
 }

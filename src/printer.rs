@@ -106,6 +106,7 @@ impl PrettyPrintable for BitVecExpr {
                     match op {
                         BitVecBinArithOp::And => "&",
                         BitVecBinArithOp::Add => "+",
+                        BitVecBinArithOp::Sub => "-",
                         BitVecBinArithOp::Or => "|",
                     },
                     r.pretty_print(ctx),
@@ -170,8 +171,20 @@ impl PrettyPrintable for RwRule {
         let nlindent = "\n    ";
         let l = &ctx[self.lhs];
         let r = &ctx[self.rhs];
+        let where_clause = if self.where_cls.is_empty() {
+            String::new()
+        } else {
+            let defs: String = self
+                .where_cls
+                .iter()
+                .map(|(name, w)| {
+                    format!("{nlindent}    {} := {};", name, ctx[*w].pretty_print(ctx))
+                })
+                .collect();
+            format!("{nlindent}where{defs}")
+        };
         format!(
-            "rule {}({}) {{{nlindent}{}{nlindent}=>{nlindent}{}\n}}",
+            "rule {}({}) {{{nlindent}{}{nlindent}=>{nlindent}{}{where_clause}\n}}",
             self.name,
             self.width_vars.join(", "),
             l.pretty_print(ctx),

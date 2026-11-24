@@ -1,0 +1,35 @@
+\documentclass[letterpaper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{array}
+
+\title{Notes on type-checking}
+\author{Pedro Pontes García}
+\date{November 2026}
+
+\newcommand{\p}{\,+\,}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\begin{document}
+\maketitle
+
+\begin{table}[ht]
+\centering
+\renewcommand{\arraystretch}{1.8}
+\setlength{\tabcolsep}{12pt}
+\begin{tabular}{L{4cm}cp{8.5cm}}
+    \textbf{LHS} & \textbf{Checks?} & \textbf{Explanation}\\
+    \toprule
+    $a:i \p b:j$ & No & The LHS is rewritten as $a:w_a \p b:w_b\quad\mathtt{where}\quad w_a=i,\  w_b=j$, and the compiler cannot infer that $i=j$, so we can't guarantee that $w_a$ and $w_b$ are in the same equivalence class. \\
+    $a:i \p b:i$ & Yes & The compiler translates it to $a:w_a \p b:w_b\quad\mathtt{where}\quad w_a = i,\  w_b = i$, thus $w_a$ and $w_b$ are in the same equivalence class. \\
+    $a:i \p b:j\break\quad\mathtt{where}\quad i = j$ & Yes & Similarly to the previous case. LHS is rewritten as $a:w_a \p b:w_b\quad\mathtt{where}\quad w_a = i,\  w_b = j, i=j$, so $w_a$ and $w_b$ are in the same equivalence class. \\
+    $a:i \p b:(i+1)$ & No & Gets translated as $a:w_a \p b:w_b\quad\mathtt{where}\quad w_a = i,\  w_b = i+1$. This won't type-check as $w_a \neq w_b$, so definitely $w_a$ and $w_b$ are not in the same equivalence class. \\
+    $a:i \p b:j \break\quad\mathtt{where}\quad i = k,\ k = j$ & Yes & By transitivity. \\
+    $a:i \p b:j \break\quad\mathtt{where}\quad i = j,\ i = j+1$ & ? & Should we reject this? How? \\
+    \bottomrule
+\end{tabular}
+\end{table}
+
+\end{document}

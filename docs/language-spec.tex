@@ -1,13 +1,25 @@
-# Language specification
+\documentclass[letterpaper]{article}
 
-## Lexical forms
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{array}
+\usepackage{mathtools}
 
-```math
-\begin{aligned}
+\title{Language specification}
+\author{Pedro Pontes García}
+\date{November 2026}
+
+\begin{document}
+\maketitle
+
+\section*{Lexical forms}
+
+\begin{align*}
 \langle\text{letter}\rangle
-  &\coloneqq \texttt{A–Z} \mid \texttt{a–z} \\
+  &\coloneqq \texttt{A}\text{--}\texttt{Z} \mid \texttt{a}\text{--}\texttt{z} \\
 \langle\text{digit}\rangle
-  &\coloneqq \texttt{0–9} \\
+  &\coloneqq \texttt{0}\text{--}\texttt{9} \\
 \langle\text{id}\rangle
   &\coloneqq (\texttt{\_} \mid \langle\text{letter}\rangle)^+
           (\texttt{\_} \mid \langle\text{letter}\rangle \mid \langle\text{digit}\rangle)^* \\
@@ -19,7 +31,7 @@
   &\coloneqq \texttt{0} \mid \texttt{1} \mid \texttt{2} \mid \texttt{3}
           \mid \texttt{4} \mid \texttt{5} \mid \texttt{6} \mid \texttt{7} \\
 \langle\text{hex-digit}\rangle
-  &\coloneqq \langle\text{digit}\rangle \mid \texttt{A–F} \mid \texttt{a–f} \\
+  &\coloneqq \langle\text{digit}\rangle \mid \texttt{A}\text{--}\texttt{F} \mid \texttt{a}\text{--}\texttt{f} \\
 \langle\text{bin-lit}\rangle
   &\coloneqq \texttt{0b}\,\langle\text{bin-digit}\rangle^+ \\
 \langle\text{oct-lit}\rangle
@@ -31,13 +43,11 @@
 \langle\text{num-lit}\rangle
   &\coloneqq \langle\text{bin-lit}\rangle \mid \langle\text{oct-lit}\rangle
           \mid \langle\text{hex-lit}\rangle \mid \langle\text{dec-lit}\rangle
-\end{aligned}
-```
+\end{align*}
 
-## Rewrite rules
+\section*{Rewrite rules}
 
-```math
-\begin{aligned}
+\begin{align*}
 \langle\text{file}\rangle
   &\coloneqq \langle\text{rw-rule}\rangle^* \\
 \langle\text{rw-rule}\rangle
@@ -53,13 +63,11 @@
   &\coloneqq \texttt{where}\;(\langle\text{assgn}\rangle\;\texttt{;})^+ \\
 \langle\text{assgn}\rangle
   &\coloneqq \langle\text{id}\rangle\;\texttt{:=}\;\langle\text{w-expr}\rangle
-\end{aligned}
-```
+\end{align*}
 
-## Bitvector expressions
+\section*{Bitvector expressions}
 
-```math
-\begin{aligned}
+\begin{align*}
 \langle\text{bv-expr}\rangle
   &\coloneqq \langle\text{bv-atom}\rangle\;[\langle\text{w-suffix}\rangle] \\
 \langle\text{w-suffix}\rangle
@@ -94,15 +102,13 @@
       \;\texttt{)} \\
 \langle\text{concat}\rangle
   &\coloneqq \texttt{\{}\;\langle\text{bv-expr}\rangle\;\texttt{,}\;\langle\text{bv-expr}\rangle\;\texttt{\}}
-\end{aligned}
-```
+\end{align*}
 
-$^\dagger$​Assumed to have a width of one.
+$^\dagger$Assumed to have a width of one.
 
-## Width expressions
+\section*{Width expressions}
 
-```math
-\begin{aligned}
+\begin{align*}
 \langle\text{w-expr}\rangle
   &\coloneqq \langle\text{w-cond}\rangle \mid \langle\text{w-binary}\rangle \\
 \langle\text{w-cond}\rangle
@@ -116,13 +122,11 @@ $^\dagger$​Assumed to have a width of one.
       \mid \texttt{(}\;\langle\text{w-expr}\rangle\;\texttt{)} \\
 \langle\text{w-add-op}\rangle
   &\coloneqq \texttt{+} \mid \texttt{-}
-\end{aligned}
-```
+\end{align*}
 
-## Boolean expressions
+\section*{Boolean expressions}
 
-```math
-\begin{aligned}
+\begin{align*}
 \langle\text{bool-expr}\rangle
   &\coloneqq \langle\text{bool-or}\rangle \\
 \langle\text{bool-or}\rangle
@@ -145,5 +149,6 @@ $^\dagger$​Assumed to have a width of one.
 \langle\text{comp-op}\rangle
   &\coloneqq \texttt{>=} \mid \texttt{<=} \mid \texttt{==}
       \mid \texttt{>} \mid \texttt{<}
-\end{aligned}
-```
+\end{align*}
+
+\end{document}

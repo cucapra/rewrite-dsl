@@ -1,5 +1,6 @@
 use cranelift_entity::{PrimaryMap, entity_impl};
 use itertools::Itertools;
+use std::collections::hash_map::Entry;
 use std::fmt;
 use std::{borrow::Cow, collections::HashMap, ops::Index};
 
@@ -65,6 +66,8 @@ pub enum BitVecBinArithOp {
     And,
     /// Addition.
     Add,
+    /// Subtraction.
+    Sub,
     /// Bitwise OR.
     Or,
 }
@@ -117,12 +120,12 @@ pub enum BitVecExpr {
 }
 
 /// Expression arena.
-///
-/// TODO: hashcons?
 pub struct Ctx {
     width_exprs: PrimaryMap<WidthExprId, WidthExpr>,
     bool_exprs: PrimaryMap<BoolExprId, BoolExpr>,
     bv_exprs: PrimaryMap<BitVecExprId, BitVecExpr>,
+    width_interner: HashMap<WidthExpr, WidthExprId>,
+    bool_interner: HashMap<BoolExpr, BoolExprId>,
     /// Width constant `1`.
     width_one: WidthExprId,
     /// 1-bit constant `#b0`.
@@ -136,7 +139,9 @@ impl Default for Ctx {
     /// `width_one`, `bv_false`, `bv_true`.
     fn default() -> Self {
         let mut width_exprs: PrimaryMap<WidthExprId, WidthExpr> = Default::default();
+        let mut width_interner = HashMap::new();
         let width_one = width_exprs.push(WidthExpr::Const(1));
+        width_interner.insert(WidthExpr::Const(1), width_one);
         let mut bv_exprs: PrimaryMap<BitVecExprId, BitVecExpr> = Default::default();
         let bv_false = bv_exprs.push(BitVecExpr::Const(width_one, 0));
         let bv_true = bv_exprs.push(BitVecExpr::Const(width_one, 1)); // Arbitrary choice
@@ -144,6 +149,8 @@ impl Default for Ctx {
             width_exprs,
             bool_exprs: Default::default(),
             bv_exprs,
+            width_interner,
+            bool_interner: Default::default(),
             width_one,
             bv_false,
             bv_true,
@@ -179,13 +186,16 @@ impl Index<BitVecExprId> for Ctx {
 pub struct WidthAssignment(std::collections::HashMap<String, Width>);
 
 impl WidthAssignment {
+    // Creates an empty width assignment.
+    pub fn empty() -> Self {
+        WidthAssignment(HashMap::new())
+    }
+
     /// Creates a vector of all possible width assignments for a vector of variables.
-    ///
-    /// WARNING: This is, like, crazy bad. Like, len(vars)^len(from..to) bad.
-    /// TODO: Make less bad.
     pub fn exhaustive_in_range(vars: &[String], from: u32, to: u32) -> Vec<Self> {
-        (from..to)
-            .combinations_with_replacement(vars.len())
+        (0..vars.len())
+            .map(|_| from..to)
+            .multi_cartesian_product()
             .map(|avec| {
                 let wa: HashMap<_, _> = avec
                     .iter()
@@ -217,15 +227,37 @@ impl Index<&String> for WidthAssignment {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum EvalError {
+    /// Width variable that is currently unbound.
+    Unbound(String),
+    /// Under/overflow.
+    Undefined,
+}
+
 impl Ctx {
     /// Inserts a [`WidthExpr`], returning its handle.
     pub fn insert_width(&mut self, value: WidthExpr) -> WidthExprId {
-        self.width_exprs.push(value)
+        match self.width_interner.entry(value) {
+            Entry::Occupied(e) => *e.get(),
+            Entry::Vacant(e) => {
+                let id = self.width_exprs.push(e.key().clone());
+                e.insert(id);
+                id
+            }
+        }
     }
 
     /// Inserts a [`BoolExpr`], returning its handle.
     pub fn insert_bool(&mut self, value: BoolExpr) -> BoolExprId {
-        self.bool_exprs.push(value)
+        match self.bool_interner.entry(value) {
+            Entry::Occupied(e) => *e.get(),
+            Entry::Vacant(e) => {
+                let id = self.bool_exprs.push(e.key().clone());
+                e.insert(id);
+                id
+            }
+        }
     }
 
     /// Inserts a [`BitVecExpr`], returning its handle.
@@ -240,7 +272,7 @@ impl Ctx {
 
     /// Inserts a width variable with the given name, returning its handle.
     pub fn width_var(&mut self, name: Cow<String>) -> WidthExprId {
-        self.width_exprs.push(WidthExpr::Var(name.into_owned()))
+        self.insert_width(WidthExpr::Var(name.into_owned()))
     }
 
     /// Returns the handle for the 1-bit constant `#b0`.
@@ -321,6 +353,8 @@ pub struct RwRule {
     pub lhs: BitVecExprId,
     /// Right-hand side (replacement).
     pub rhs: BitVecExprId,
+    /// Where clause.
+    pub where_cls: Vec<(String, WidthExprId)>,
 }
 
 pub type RwProg = Vec<RwRule>;

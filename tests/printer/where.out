@@ -2,4 +2,7 @@ rule WhereExpressions(i, N, M) {
     a:i
     =>
     a:i
+    where
+        W := (N + 1);
+        V := (if (N > 8) then 16 else 8);
 }
